@@ -19,10 +19,13 @@ mongoose.connect(process.env.MONGO_URI || "mongodb+srv://alejoguzmanx:MMv1znUOUv
 const configRouter = require("./routes/config");
 const productosRoutes = require('./routes/product');
 const categoryRoutes = require('./routes/category');
+const cartRoutes = require('./routes/cart');
 
 app.use("/", configRouter);
 app.use('/product', productosRoutes);
 app.use('/category', categoryRoutes);
+app.use('/cart', cartRoutes);
+
 
 
 app.get('/', (req, res) => {
