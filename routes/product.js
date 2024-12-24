@@ -8,10 +8,10 @@ const router = express.Router();
 // Crear un producto (POST)
 router.post('/', async (req, res) => {
     try {
-        const { categoria } = req.body;
+        const { category } = req.body;
 
         // Verifica si la categoría existe || RECIBE ID DEL FRONT
-        const categoriaExistente = await Categoria.findById(categoria);
+        const categoriaExistente = await Categoria.findById(category);
         if (!categoriaExistente) return res.status(404).json({ error: 'Categoría no encontrada' });
 
         const nuevoProducto = new Product(req.body);
