@@ -22,7 +22,7 @@ const categoryRoutes = require('./routes/category');
 const cartRoutes = require('./routes/cart');
 
 app.use("/", configRouter);
-app.use('/product', productosRoutes);
+app.use('/products', productosRoutes);
 app.use('/category', categoryRoutes);
 app.use('/cart', cartRoutes);
 
