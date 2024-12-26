@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const productoSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String, required: true },
+    link: { type: String, required: true },
     sellingPrice: { type: Number, required: true },
     listPrice: { type: Number },
     stock: { type: Number, required: true },

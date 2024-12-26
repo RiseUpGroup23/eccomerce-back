@@ -42,6 +42,17 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+router.get('/link/:linkProducto', async (req, res) => {
+    try {
+        const producto = await Product.findOne({ link: req.params.linkProducto });
+        if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
+        res.json(producto);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 router.put('/:id', async (req, res) => {
     try {
         const productoActualizado = await Product.findByIdAndUpdate(
