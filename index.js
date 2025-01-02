@@ -22,6 +22,8 @@ const categoryRoutes = require('./routes/category');
 const cartRoutes = require('./routes/cart');
 const userRoutes = require('./routes/user');
 const collectionRoutes = require('./routes/collection');
+const pickupRoutes = require('./routes/pickup');
+const transportRoutes = require('./routes/transport');
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);
@@ -29,6 +31,8 @@ app.use('/category', categoryRoutes);
 app.use('/cart', cartRoutes);
 app.use('/user', userRoutes);
 app.use('/collection', collectionRoutes);
+app.use('/pickup', pickupRoutes);
+app.use('/transport', transportRoutes);
 
 
 
