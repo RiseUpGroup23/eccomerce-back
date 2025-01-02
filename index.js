@@ -21,12 +21,14 @@ const productosRoutes = require('./routes/product');
 const categoryRoutes = require('./routes/category');
 const cartRoutes = require('./routes/cart');
 const userRoutes = require('./routes/user');
+const collectionRoutes = require('./routes/collection');
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);
 app.use('/category', categoryRoutes);
 app.use('/cart', cartRoutes);
 app.use('/user', userRoutes);
+app.use('/collection', collectionRoutes);
 
 
 
