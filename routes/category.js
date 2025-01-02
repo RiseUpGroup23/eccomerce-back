@@ -3,6 +3,7 @@ const Category = require('../models/category/categoryModel');
 
 const router = express.Router();
 
+// Crear una categoría (POST)
 router.post('/', async (req, res) => {
     try {
         const newCategory = new Category(req.body);
@@ -13,18 +14,20 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Obtener todas las categorías (GET)
 router.get('/', async (req, res) => {
     try {
-        const categorys = await Category.find();
-        res.json(categorys);
+        const categories = await Category.find().populate('subcategories');
+        res.json(categories);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// Obtener una categoría por ID (GET)
 router.get('/:id', async (req, res) => {
     try {
-        const category = await Category.findById(req.params.id);
+        const category = await Category.findById(req.params.id).populate('subcategories');
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
         res.json(category);
     } catch (err) {
@@ -32,6 +35,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Actualizar una categoría (PUT)
 router.put('/:id', async (req, res) => {
     try {
         const categoryUpdated = await Category.findByIdAndUpdate(
@@ -46,11 +50,52 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Eliminar una categoría (DELETE)
 router.delete('/:id', async (req, res) => {
     try {
         const categoryDeleted = await Category.findByIdAndDelete(req.params.id);
         if (!categoryDeleted) return res.status(404).json({ error: 'Categoría no encontrada' });
         res.json({ message: 'Categoría eliminada con éxito' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Agregar una subcategoría a una categoría (POST)
+router.post('/:id/subcategory', async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
+
+        // Verifica que el ID de la subcategoría sea válido
+        const subcategoryId = req.body.subcategoryId;
+        const subcategory = await Category.findById(subcategoryId);
+        if (!subcategory) return res.status(404).json({ error: 'Subcategoría no encontrada' });
+
+        // Agregar la subcategoría al array de subcategorías de la categoría principal
+        category.subcategories.push(subcategoryId);
+        await category.save();
+
+        res.status(201).json(category);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eliminar una subcategoría de una categoría (DELETE)
+router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
+
+        // Eliminar la subcategoría del array de subcategorías
+        const subcategoryIndex = category.subcategories.indexOf(req.params.subcategoryId);
+        if (subcategoryIndex === -1) return res.status(404).json({ error: 'Subcategoría no encontrada' });
+
+        category.subcategories.splice(subcategoryIndex, 1);
+        await category.save();
+
+        res.json({ message: 'Subcategoría eliminada con éxito' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

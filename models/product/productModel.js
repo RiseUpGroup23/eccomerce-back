@@ -7,7 +7,8 @@ const productoSchema = new mongoose.Schema({
     sellingPrice: { type: Number, required: true },
     listPrice: { type: Number },
     stock: { type: Number, required: true },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true }, // Categoría principal
+    subcategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria' }, // Subcategoría
     images: [{ type: String }],
     brand: { type: String },
 }, {
