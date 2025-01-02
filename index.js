@@ -20,11 +20,13 @@ const configRouter = require("./routes/config");
 const productosRoutes = require('./routes/product');
 const categoryRoutes = require('./routes/category');
 const cartRoutes = require('./routes/cart');
+const userRoutes = require('./routes/user');
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);
 app.use('/category', categoryRoutes);
 app.use('/cart', cartRoutes);
+app.use('/user', userRoutes);
 
 
 
