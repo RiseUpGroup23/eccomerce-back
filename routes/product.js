@@ -52,6 +52,21 @@ router.get('/link/:linkProducto', async (req, res) => {
     }
 });
 
+router.get('/categoria/:idCategoria', async (req, res) => {
+    try {
+        const { idCategoria } = req.params;
+
+        const productos = await Product.find({ categoria: idCategoria }).populate('categoria');
+        if (!productos || productos.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron productos para esta categoría' });
+        }
+
+        res.json(productos);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 router.put('/:id', async (req, res) => {
     try {
