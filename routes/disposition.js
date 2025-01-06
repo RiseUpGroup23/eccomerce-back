@@ -1,5 +1,5 @@
 const express = require('express');
-const DispositionModel = require('../models/disposition/dispositionModel');
+const { DispositionModel } = require('../models/disposition/dispositionModel');
 
 const router = express.Router();
 
