@@ -25,16 +25,15 @@ router.get('/', async (req, res) => {
 });
 
 // Obtener una categoría por ID (GET)
-router.get('/:categoryLink', async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
-        const category = await Category.findOne({ categoryLink: req.params.categoryLink }).populate('subcategories');
+        const category = await Category.findById(req.params.id).populate('subcategories');
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
         res.json(category);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
-
 
 // Actualizar una categoría (PUT)
 router.put('/:id', async (req, res) => {

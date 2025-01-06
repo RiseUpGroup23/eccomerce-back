@@ -26,7 +26,7 @@ router.post('/', async (req, res) => {
             ...req.body,
             subcategory: subcategoriaExistente ? subcategoriaExistente._id : null // Asocia la subcategoría si existe
         });
-        
+
         const productoGuardado = await nuevoProducto.save();
         res.status(201).json(productoGuardado);
     } catch (err) {
@@ -64,11 +64,20 @@ router.get('/link/:linkProducto', async (req, res) => {
     }
 });
 
-router.get('/categoria/:idCategoria', async (req, res) => {
+router.get('/categoria/:categoryLink', async (req, res) => {
     try {
-        const { idCategoria } = req.params;
+        const { categoryLink } = req.params;
 
-        const productos = await Product.find({ categoria: idCategoria }).populate('categoria');
+        // Buscar la categoría por su categoryLink
+        const categoria = await Category.findOne({ categoryLink: categoryLink });
+
+        if (!categoria) {
+            return res.status(404).json({ error: 'Categoría no encontrada' });
+        }
+
+        // Ahora buscar los productos que tienen esta categoría
+        const productos = await Product.find({ category: categoria._id }).populate('category');
+
         if (!productos || productos.length === 0) {
             return res.status(404).json({ error: 'No se encontraron productos para esta categoría' });
         }
@@ -78,6 +87,7 @@ router.get('/categoria/:idCategoria', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Obtener productos por subcategoría (GET)
 router.get('/subcategoria/:idSubcategoria', async (req, res) => {
