@@ -46,7 +46,12 @@ const DispositionItemSchema = new Schema({
     }
 }, { timestamps: true });
 
-// Modelo para DispositionItem
-const DispositionModel = mongoose.model("DispositionItem", DispositionItemSchema);
+// Esquema para DispositionModel
+const DispositionSchema = new Schema({
+    items: [DispositionItemSchema]  // Array de DispositionItems
+}, { timestamps: true });
+
+// Modelo para DispositionModel
+const DispositionModel = mongoose.model("Disposition", DispositionSchema);
 
 module.exports = { DispositionModel };
