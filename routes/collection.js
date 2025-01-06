@@ -28,10 +28,10 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get a collection by ID (GET)
-router.get('/:id', async (req, res) => {
+// Obtener una colección por collectionId (GET)
+router.get('/:collectionId', async (req, res) => {
     try {
-        const collection = await Collection.findById(req.params.id).populate('products');
+        const collection = await Collection.findOne({ collectionId: req.params.collectionId }).populate('products');
         if (!collection) return res.status(404).json({ error: 'Colección no encontrada' });
         res.json(collection);
     } catch (err) {
