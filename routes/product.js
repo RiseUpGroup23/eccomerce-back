@@ -69,7 +69,7 @@ router.get('/categoria/:categoryLink', async (req, res) => {
         const { categoryLink } = req.params;
 
         // Buscar la categoría por su categoryLink
-        const categoria = await Category.findOne({ categoryLink: categoryLink });
+        const categoria = await Categoria.findOne({ categoryLink: categoryLink });
 
         if (!categoria) {
             return res.status(404).json({ error: 'Categoría no encontrada' });
