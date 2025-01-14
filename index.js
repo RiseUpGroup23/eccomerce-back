@@ -25,6 +25,7 @@ const collectionRoutes = require('./routes/collection');
 const pickupRoutes = require('./routes/pickup');
 const transportRoutes = require('./routes/transport');
 const dispositionRoutes = require('./routes/disposition');
+const searchRoutes = require('./routes/search');
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);
@@ -35,6 +36,7 @@ app.use('/collection', collectionRoutes);
 app.use('/pickup', pickupRoutes);
 app.use('/transport', transportRoutes);
 app.use('/disposition', dispositionRoutes);
+app.use('/search', searchRoutes);
 
 
 
