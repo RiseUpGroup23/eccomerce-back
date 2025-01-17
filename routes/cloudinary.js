@@ -13,7 +13,7 @@ cloudinary.config({
 });
 
 // Endpoint para cargar varias imágenes
-router.post('/cloudinary', upload.array('photos', 6), async (req, res) => {
+router.post('/', upload.array('photos', 6), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No se proporcionaron imágenes.' });
