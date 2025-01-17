@@ -35,6 +35,28 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Obtener subcategorías de una categoría por ID (GET)
+router.get('/:idCategoria/subcategorias', async (req, res) => {
+    try {
+        const { idCategoria } = req.params;
+
+        // Buscar la categoría por su ID
+        const category = await Category.findById(idCategoria);
+        if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
+
+        // Devolver las subcategorías asociadas
+        const subcategorias = await Category.find({ _id: { $in: category.subcategories } });
+
+        if (!subcategorias || subcategorias.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron subcategorías para esta categoría' });
+        }
+
+        res.json(subcategorias);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Actualizar una categoría (PUT)
 router.put('/:id', async (req, res) => {
     try {
