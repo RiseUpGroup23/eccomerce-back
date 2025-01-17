@@ -15,9 +15,9 @@ router.get('/products', async (req, res) => {
         // Filtros de nombre, categoría y subcategoría (si se proporcionan)
         const filterConditions = {};
 
-        // Filtrar por nombre (q)
+        // Filtrar por nombre (q) si se pasa en la consulta
         if (q) {
-            filterConditions.name = { $regex: q, $options: 'i' };  // Buscamos de manera insensible a mayúsculas/minúsculas
+            filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
         }
 
         // Filtros de categoría y subcategoría
@@ -48,4 +48,4 @@ router.get('/products', async (req, res) => {
     }
 });
 
-module.exports = rout
+module.exports = router;
