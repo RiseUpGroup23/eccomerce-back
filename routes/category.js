@@ -47,10 +47,6 @@ router.get('/:idCategoria/subcategorias', async (req, res) => {
         // Devolver las subcategorías asociadas
         const subcategorias = await Category.find({ _id: { $in: category.subcategories } });
 
-        if (!subcategorias || subcategorias.length === 0) {
-            return res.status(404).json({ error: 'No se encontraron subcategorías para esta categoría' });
-        }
-
         res.json(subcategorias);
     } catch (err) {
         res.status(500).json({ error: err.message });
