@@ -3,17 +3,24 @@ const Product = require('../models/product/productModel');
 
 const router = express.Router();
 
-// Ruta para obtener productos con paginación, filtros por categoría y subcategoría
+// Ruta para obtener productos con paginación, filtros por nombre, categoría y subcategoría
 router.get('/products', async (req, res) => {
     try {
-        const { page = 1, itemsPerPage = 10, category, subcategory } = req.query;
+        const { page = 1, itemsPerPage = 10, category, subcategory, q } = req.query;
 
         // Calcular la cantidad de saltos (skip) y el límite (limit) de los productos
         const skip = (page - 1) * itemsPerPage;
         const limit = parseInt(itemsPerPage, 10);
 
-        // Filtros de categoría y subcategoría (si se proporcionan)
+        // Filtros de nombre, categoría y subcategoría (si se proporcionan)
         const filterConditions = {};
+
+        // Filtrar por nombre (q)
+        if (q) {
+            filterConditions.name = { $regex: q, $options: 'i' };  // Buscamos de manera insensible a mayúsculas/minúsculas
+        }
+
+        // Filtros de categoría y subcategoría
         if (category) filterConditions.category = category;
         if (subcategory) filterConditions.subcategory = subcategory;
 
@@ -41,4 +48,4 @@ router.get('/products', async (req, res) => {
     }
 });
 
-module.exports = router;
+module.exports = rout
