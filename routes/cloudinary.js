@@ -1,16 +1,20 @@
 const express = require('express');
+const cloudinary = require('cloudinary').v2;  // Asegúrate de importar Cloudinary
+const multer = require('multer');  // Asegúrate de importar multer
+const upload = multer({ storage: multer.memoryStorage() });  // Configuración de multer para almacenamiento en memoria
 
 const router = express.Router();
 
-// Endpoint en el backend para cargar varias imágenes
+// Configurar Cloudinary solo una vez
+cloudinary.config({
+    cloud_name: "dwqcfuief",
+    api_key: "381134874894872",
+    api_secret: "XfgRi_QxAhGa01VnckWH7AAx9rE",
+});
+
+// Endpoint para cargar varias imágenes
 router.post('/cloudinary', upload.array('photos', 6), async (req, res) => {
     try {
-        cloudinary.config({
-            cloud_name: "dwqcfuief",
-            api_key: "381134874894872",
-            api_secret: "XfgRi_QxAhGa01VnckWH7AAx9rE",
-        });
-
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No se proporcionaron imágenes.' });
         }
