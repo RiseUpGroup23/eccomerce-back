@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
         const categoriaExistente = await Categoria.findById(category);
         if (!categoriaExistente) return res.status(404).json({ error: 'Categoría no encontrada' });
 
-        // Verifica si la subcategoría existe
+        // Verifica si la subcategoría existe solo si está definida
         let subcategoriaExistente = null;
         if (subcategory) {
             subcategoriaExistente = await Categoria.findById(subcategory);
@@ -24,7 +24,7 @@ router.post('/', async (req, res) => {
         // Crea el nuevo producto
         const nuevoProducto = new Product({
             ...req.body,
-            subcategory: subcategoriaExistente ? subcategoriaExistente._id : null // Asocia la subcategoría si existe
+            subcategory: subcategoriaExistente ? subcategoriaExistente._id : null, // Asocia la subcategoría si existe
         });
 
         const productoGuardado = await nuevoProducto.save();
@@ -33,6 +33,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 router.get('/', async (req, res) => {
     try {
