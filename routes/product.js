@@ -8,7 +8,7 @@ const router = express.Router();
 // Crear un producto (POST)
 router.post('/', async (req, res) => {
     try {
-        const { category, subcategory } = req.body;
+        const { name, category, subcategory } = req.body;
 
         // Verifica si la categoría existe
         const categoriaExistente = await Categoria.findById(category);
@@ -21,9 +21,23 @@ router.post('/', async (req, res) => {
             if (!subcategoriaExistente) return res.status(404).json({ error: 'Subcategoría no encontrada' });
         }
 
-        // Crea el nuevo producto
+        // Crear el link único para el producto
+        let link = name.toLowerCase().replace(/\s+/g, '-'); // Convierte el nombre a minúsculas y reemplaza los espacios por guiones
+
+        // Verificar si ya existe un producto con ese link
+        let existingProduct = await Product.findOne({ link });
+        let counter = 1;
+        // Si el link ya existe, agregamos un contador al final hasta encontrar uno único
+        while (existingProduct) {
+            link = `${link}-${counter}`;
+            existingProduct = await Product.findOne({ link });
+            counter++;
+        }
+
+        // Crea el nuevo producto con el link único
         const nuevoProducto = new Product({
             ...req.body,
+            link,  // Asignar el link único
             subcategory: subcategoriaExistente ? subcategoriaExistente._id : null, // Asocia la subcategoría si existe
         });
 
@@ -33,6 +47,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 
 router.get('/', async (req, res) => {
