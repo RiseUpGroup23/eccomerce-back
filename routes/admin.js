@@ -1,7 +1,6 @@
 const express = require('express');
 const Product = require('../models/product/productModel');
 const Category = require('../models/category/categoryModel');  // Importar el modelo de Categoría
-const Subcategory = require('../models/subcategory/subcategoryModel');  // Importar el modelo de Subcategoría
 
 const router = express.Router();
 
@@ -22,20 +21,31 @@ router.get('/products', async (req, res) => {
             filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
         }
 
-        // Filtros de categoría y subcategoría por ID
+        // Filtros de categoría por ID
         if (category) {
             // Verificar que el category es un ID válido antes de buscarlo
             const validCategory = await Category.findById(category);
             if (validCategory) {
+                // Si se pasa una categoría, filtrar por el ID de la categoría
                 filterConditions.category = category;
+            } else {
+                return res.status(400).json({ error: 'Categoría no válida.' });
             }
         }
 
-        if (subcategory) {
-            // Verificar que el subcategory es un ID válido antes de buscarlo
-            const validSubcategory = await Subcategory.findById(subcategory);
-            if (validSubcategory) {
-                filterConditions.subcategory = subcategory;
+        // Filtros de subcategoría por nombre dentro de la categoría seleccionada
+        if (subcategory && category) {
+            // Verificar si la categoría tiene la subcategoría proporcionada
+            const validCategory = await Category.findById(category);
+            if (validCategory) {
+                // Verificar si la subcategoría está en el arreglo de subcategorías de la categoría
+                if (validCategory.subcategories.includes(subcategory)) {
+                    filterConditions.subcategory = subcategory;
+                } else {
+                    return res.status(400).json({ error: 'Subcategoría no válida para esta categoría.' });
+                }
+            } else {
+                return res.status(400).json({ error: 'Categoría no válida.' });
             }
         }
 
@@ -43,8 +53,7 @@ router.get('/products', async (req, res) => {
         const productos = await Product.find(filterConditions)
             .skip(skip)
             .limit(limit)
-            .populate('category')        // Poblar la relación con la categoría
-            .populate('subcategory');    // Poblar la relación con la subcategoría
+            .populate('category');        // Poblar la relación con la categoría
 
         // Contar el total de productos para calcular el total de páginas
         const totalOfItems = await Product.countDocuments(filterConditions);
