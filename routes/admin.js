@@ -1,5 +1,7 @@
 const express = require('express');
 const Product = require('../models/product/productModel');
+const Category = require('../models/category/categoryModel');  // Importar el modelo de Categoría
+const Subcategory = require('../models/subcategory/subcategoryModel');  // Importar el modelo de Subcategoría
 
 const router = express.Router();
 
@@ -20,9 +22,22 @@ router.get('/products', async (req, res) => {
             filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
         }
 
-        // Filtros de categoría y subcategoría
-        if (category) filterConditions.category = category;
-        if (subcategory) filterConditions.subcategory = subcategory;
+        // Filtros de categoría y subcategoría por ID
+        if (category) {
+            // Verificar que el category es un ID válido antes de buscarlo
+            const validCategory = await Category.findById(category);
+            if (validCategory) {
+                filterConditions.category = category;
+            }
+        }
+
+        if (subcategory) {
+            // Verificar que el subcategory es un ID válido antes de buscarlo
+            const validSubcategory = await Subcategory.findById(subcategory);
+            if (validSubcategory) {
+                filterConditions.subcategory = subcategory;
+            }
+        }
 
         // Consultar los productos con filtros y paginación, y poblar las relaciones
         const productos = await Product.find(filterConditions)
