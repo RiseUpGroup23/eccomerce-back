@@ -1,5 +1,3 @@
-const mongoose = require('mongoose');
-
 const productoSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String, required: true },
@@ -8,7 +6,11 @@ const productoSchema = new mongoose.Schema({
     listPrice: { type: Number },
     stock: { type: Number, required: true },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true }, // Categoría principal
-    subcategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria' }, // Subcategoría
+    subcategory: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Categoria',
+        default: null // Permitir que subcategory sea null o un ObjectId de categoría
+    },
     images: [{ type: String }],
     brand: { type: String },
 }, {

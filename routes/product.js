@@ -125,17 +125,27 @@ router.get('/subcategoria/:idSubcategoria', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
+        // Verificar si subcategory está vacío y asignar null si es necesario
+        if (req.body.subcategory === "") {
+            req.body.subcategory = null;
+        }
+
         const productoActualizado = await Product.findByIdAndUpdate(
             req.params.id,
             req.body,
             { new: true }
         );
-        if (!productoActualizado) return res.status(404).json({ error: 'Producto no encontrado' });
+
+        if (!productoActualizado) {
+            return res.status(404).json({ error: 'Producto no encontrado' });
+        }
+
         res.json(productoActualizado);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 router.delete('/:id', async (req, res) => {
     try {
