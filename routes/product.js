@@ -92,7 +92,7 @@ router.get('/categoria/:categoryLink', async (req, res) => {
         }
 
         // Ahora buscar los productos que tienen esta categoría
-        const productos = await Product.find({ category: categoria._id }).populate('category');
+        const productos = await Product.find({ category: categoria._id }).populate('category').populate('subcategory');
 
         if (!productos || productos.length === 0) {
             return res.status(404).json({ error: 'No se encontraron productos para esta categoría' });

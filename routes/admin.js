@@ -53,7 +53,8 @@ router.get('/products', async (req, res) => {
         const productos = await Product.find(filterConditions)
             .skip(skip)
             .limit(limit)
-            .populate('category');        // Poblar la relación con la categoría
+            .populate('category')        // Poblar la relación con la categoría
+            .populate('subcategory');        // Poblar la relación con la categoría
 
         // Contar el total de productos para calcular el total de páginas
         const totalOfItems = await Product.countDocuments(filterConditions);
