@@ -72,4 +72,43 @@ router.get('/products', async (req, res) => {
     }
 });
 
+// Ruta para obtener categorías con paginación, filtros por nombre
+router.get('/categories', async (req, res) => {
+    try {
+        const { page = 1, itemsPerPage = 10, q } = req.query;
+
+        // Calcular la cantidad de saltos (skip) y el límite (limit) de las categorías
+        const skip = (page - 1) * itemsPerPage;
+        const limit = parseInt(itemsPerPage, 10);
+
+        // Filtro de nombre (q) si se pasa en la consulta
+        const filterConditions = {};
+
+        // Filtro por nombre de categoría
+        if (q) {
+            filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
+        }
+
+        // Consultar las categorías con los filtros y paginación
+        const categories = await Category.find(filterConditions)
+            .skip(skip)
+            .limit(limit);
+
+        // Contar el total de categorías para calcular el total de páginas
+        const totalOfItems = await Category.countDocuments(filterConditions);
+
+        // Determinar si hay más páginas
+        const nextPage = (page * itemsPerPage) < totalOfItems;
+
+        // Enviar la respuesta con las categorías, el total de elementos y si hay una siguiente página
+        res.json({
+            categories,
+            nextPage,
+            totalOfItems
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
