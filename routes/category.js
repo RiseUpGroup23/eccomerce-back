@@ -1,7 +1,7 @@
 const express = require('express');
 const Category = require('../models/category/categoryModel');
 const SubCategory = require('../models/category/subCategoryModel');
-
+const mongoose = require('mongoose');
 const router = express.Router();
 
 // Crear una categoría (POST)
@@ -25,11 +25,24 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Obtener una categoría por ID (GET)
-router.get('/:id', async (req, res) => {
+// Obtener una categoría por ID o por nombre (GET)
+router.get('/:idOrName', async (req, res) => {
     try {
-        // Buscar la categoría principal por ID
-        const category = await Category.findById(req.params.id).populate('subcategories');
+        // Verificar si el parámetro es un ID de MongoDB válido o un nombre
+        let category;
+        const idOrName = req.params.idOrName.trim().toLowerCase();  // Convertir a minúsculas el parámetro de búsqueda
+
+        if (mongoose.Types.ObjectId.isValid(idOrName)) {
+            // Buscar por ID si el parámetro es un ID válido
+            category = await Category.findById(idOrName).populate('subcategories');
+        } else {
+            // Buscar por nombre, ignorando mayúsculas y minúsculas
+            category = await Category.findOne({
+                categoryLink: idOrName
+            }).populate('subcategories');
+        }
+
+        // Verificar si la categoría fue encontrada
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
 
         // Obtener todos los IDs de las subcategorías que existen en la base de datos
@@ -57,7 +70,6 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 
 // Obtener subcategorías de una categoría por ID (GET)
 router.get('/:idCategoria/subcategorias', async (req, res) => {
@@ -137,7 +149,20 @@ router.post('/:id/subcategory', async (req, res) => {
         // Agregar la subcategoría al array de subcategorías de la categoría principal
         category.subcategories.push(subcategory._id);
 
-        // Guardar la categoría principal con la subcategoría añadida
+        // Filtrar y eliminar subcategorías que no existen
+        const validSubcategories = await SubCategory.find({
+            '_id': { $in: category.subcategories }
+        }).select('_id');
+
+        // Extraer los IDs válidos de las subcategorías existentes
+        const validSubcategoryIds = validSubcategories.map(sub => sub._id.toString());
+
+        // Filtrar las subcategorías para eliminar las que no existen
+        category.subcategories = category.subcategories.filter(subcategoryId =>
+            validSubcategoryIds.includes(subcategoryId.toString())
+        );
+
+        // Guardar la categoría principal con los cambios
         await category.save();
 
         // Responder con la categoría actualizada
@@ -146,6 +171,7 @@ router.post('/:id/subcategory', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Eliminar una subcategoría de una categoría (DELETE)
 router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {

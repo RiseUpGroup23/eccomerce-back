@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+// Función para eliminar acentos
+function removeAccents(str) {
+    const accents = [
+        { base: 'a', letters: /á|à|ã|â|ä|å/g },
+        { base: 'e', letters: /é|è|ê|ë/g },
+        { base: 'i', letters: /í|ì|î|ï/g },
+        { base: 'o', letters: /ó|ò|õ|ô|ö/g },
+        { base: 'u', letters: /ú|ù|û|ü/g },
+        { base: 'n', letters: /ñ/g },
+        { base: 'c', letters: /ç/g }
+    ];
+
+    // Reemplazar los caracteres acentuados
+    accents.forEach(acc => {
+        str = str.replace(acc.letters, acc.base);
+    });
+
+    return str;
+}
+
 const categorySchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     description: { type: String },
@@ -10,8 +30,11 @@ const categorySchema = new mongoose.Schema({
 // Middleware para generar el categoryLink para la categoría principal
 categorySchema.pre('save', async function (next) {
     if (this.isNew || this.isModified('name')) {
-        // Generar el categoryLink directamente a partir del nombre de la categoría
-        this.categoryLink = this.name.toLowerCase().replace(/\s+/g, '-'); // Reemplazar espacios por guiones y convertir a minúsculas
+        // Eliminar los acentos del nombre de la categoría
+        const nameWithoutAccents = removeAccents(this.name);
+
+        // Generar el categoryLink directamente a partir del nombre de la categoría sin acentos
+        this.categoryLink = nameWithoutAccents.toLowerCase().replace(/\s+/g, '-'); // Reemplazar espacios por guiones y convertir a minúsculas
     }
     next();
 });
