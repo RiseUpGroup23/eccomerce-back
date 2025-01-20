@@ -10,8 +10,8 @@ const productoSchema = new mongoose.Schema({
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true }, // Categoría principal
     subcategory: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Categoria',
-        default: null // Permitir que subcategory sea null o un ObjectId de categoría
+        ref: 'Subcategoria',
+        default: null // Permitir que subcategory sea null o un ObjectId de subcategoría
     },
     images: [{ type: String }],
     brand: { type: String },
