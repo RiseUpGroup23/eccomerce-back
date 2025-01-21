@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/', async (req, res) => {
     try {
         // Crear la nueva categoría
-        const newCategory = new Category(req.body);
+        const newCategory = new Category({ ...req.body, subcategories: [] });
         const categorySaved = await newCategory.save();
 
         // Si la categoría tiene subcategorías, crear y asociarlas
@@ -26,13 +26,14 @@ router.post('/', async (req, res) => {
                 let subcategory = await SubCategory.findOne({ categoryLink: subcategoryLink });
 
                 if (!subcategory) {
+                    // Si no existe, crear la subcategoría
                     subcategory = new SubCategory({
                         name: name,
                         description: description,
                         categoryLink: subcategoryLink,
                     });
 
-                    // Guardar la nueva subcategoría
+                    // Guardar la subcategoría
                     await subcategory.save();
                 }
 
@@ -53,6 +54,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 
 // Obtener todas las categorías (GET)
