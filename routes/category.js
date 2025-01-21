@@ -4,16 +4,56 @@ const SubCategory = require('../models/category/subCategoryModel');
 const mongoose = require('mongoose');
 const router = express.Router();
 
-// Crear una categoría (POST)
+// Crear una categoría y sus subcategorías (POST)
 router.post('/', async (req, res) => {
     try {
+        // Crear la nueva categoría
         const newCategory = new Category(req.body);
         const categorySaved = await newCategory.save();
+
+        // Si la categoría tiene subcategorías, crear y asociarlas
+        if (req.body.subcategories && Array.isArray(req.body.subcategories)) {
+            const subcategoriesToAdd = [];
+
+            // Crear subcategorías y asociarlas con la categoría
+            for (const subcategoryData of req.body.subcategories) {
+                const { name, description } = subcategoryData;
+
+                // Crear el link de la subcategoría
+                const subcategoryLink = `${categorySaved.categoryLink ? categorySaved.categoryLink + '/' : ''}${name.toLowerCase().replace(/\s+/g, '-')}`;
+
+                // Verificar si ya existe una subcategoría con ese categoryLink
+                let subcategory = await SubCategory.findOne({ categoryLink: subcategoryLink });
+
+                if (!subcategory) {
+                    subcategory = new SubCategory({
+                        name: name,
+                        description: description,
+                        categoryLink: subcategoryLink,
+                    });
+
+                    // Guardar la nueva subcategoría
+                    await subcategory.save();
+                }
+
+                // Agregar el ID de la subcategoría al array de subcategorías de la categoría
+                subcategoriesToAdd.push(subcategory._id);
+            }
+
+            // Asociar las subcategorías creadas con la categoría principal
+            categorySaved.subcategories = subcategoriesToAdd;
+
+            // Guardar la categoría con las subcategorías asociadas
+            await categorySaved.save();
+        }
+
+        // Responder con la categoría recién creada y sus subcategorías
         res.status(201).json(categorySaved);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Obtener todas las categorías (GET)
 router.get('/', async (req, res) => {
