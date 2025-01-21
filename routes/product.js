@@ -1,6 +1,7 @@
 const express = require('express');
 const Product = require('../models/product/productModel');
 const Categoria = require('../models/category/categoryModel');
+const SubCategoria = require('../models/category/subCategoryModel');
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.post('/', async (req, res) => {
         // Verifica si la subcategoría existe solo si está definida
         let subcategoriaExistente = null;
         if (subcategory) {
-            subcategoriaExistente = await Categoria.findById(subcategory);
+            subcategoriaExistente = await SubCategoria.findById(subcategory);
             if (!subcategoriaExistente) return res.status(404).json({ error: 'Subcategoría no encontrada' });
         }
 
