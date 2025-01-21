@@ -234,4 +234,22 @@ router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {
     }
 });
 
+// Obtener una subcategoría por su ID (GET)
+router.get('/subcategory/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Buscar la subcategoría por su ID
+        const subcategory = await SubCategory.findById(id);
+
+        // Verificar si la subcategoría existe
+        if (!subcategory) return res.status(404).json({ error: 'Subcategoría no encontrada' });
+
+        // Responder con los datos de la subcategoría
+        res.json(subcategory);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
