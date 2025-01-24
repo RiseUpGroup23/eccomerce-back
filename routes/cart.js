@@ -5,6 +5,37 @@ const crypto = require('crypto');
 
 const router = express.Router();
 
+// GET Minicart: recibo los id me devuelve todos los datos de los productos
+router.post("/get-minicart", async (req, res) => {
+    const { cart } = req.body;
+
+    try {
+        // Extraemos solo los IDs de los productos del carrito
+        const productIds = cart.map(item => item.id);
+
+        // Realizamos la búsqueda de todos los productos que coinciden con los IDs
+        const products = await Producto.find({
+            _id: { $in: productIds }
+        });
+
+        // Para devolver un array con los productos y su cantidad (de acuerdo al carrito)
+        const result = cart.map(item => {
+            const product = products.find(p => p._id.toString() === item.id);
+            return {
+                ...product.toObject(), // Convirtiendo el objeto de mongoose a JSON
+                quantity: item.quantity
+            };
+        });
+
+        // Respondemos con los productos encontrados y sus cantidades
+        res.json(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener los productos" });
+    }
+});
+
+
 // Crear un carrito nuevo | a la hora de tocar el boton del carrito si aun no agregamos productos o creacion de pag
 router.post('/', async (req, res) => {
     try {
