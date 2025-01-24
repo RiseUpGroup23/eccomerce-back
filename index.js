@@ -28,6 +28,7 @@ const dispositionRoutes = require('./routes/disposition');
 const searchRoutes = require('./routes/search');
 const adminRoutes = require('./routes/admin');
 const cloudinaryRoutes = require('./routes/cloudinary');
+const ordersRoutes = require('./routes/orders');
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);
@@ -41,6 +42,7 @@ app.use('/disposition', dispositionRoutes);
 app.use('/search', searchRoutes);
 app.use('/admin', adminRoutes);
 app.use('/cloudinary', cloudinaryRoutes);
+app.use('/orders', ordersRoutes);
 
 
 
