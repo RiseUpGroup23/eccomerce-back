@@ -2,9 +2,15 @@ const mongoose = require('mongoose');
 
 // Definición del esquema de Order
 const orderSchema = new mongoose.Schema({
+    orderId: {
+        type: Number,
+        unique: true, // Asegura que cada ID de orden sea único
+        required: true
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        required: true
     },
     products: [{
         quantity: {
@@ -76,10 +82,22 @@ const orderSchema = new mongoose.Schema({
     }
 });
 
-// Pre-save hook para actualizar el campo `updatedAt` cada vez que se modifique una orden
-orderSchema.pre('save', function (next) {
+// Pre-save hook para actualizar el campo `updatedAt` y generar el `orderId` automáticamente
+orderSchema.pre('save', async function (next) {
     this.updatedAt = Date.now();
-    next();
+
+    // Si es una nueva orden (no tiene `orderId` asignado), generar el `orderId`
+    if (!this.orderId) {
+        try {
+            const lastOrder = await mongoose.model('Order').findOne().sort({ orderId: -1 }); // Obtener el último orderId
+            this.orderId = lastOrder ? lastOrder.orderId + 1 : 1; // Si existe, incrementar el último orderId; sino, comienza en 1
+            next(); // Continúa con la operación de guardado
+        } catch (error) {
+            next(error); // Manejo de errores
+        }
+    } else {
+        next(); // Si ya tiene un orderId, simplemente pasa al siguiente paso
+    }
 });
 
 // Crear y exportar el modelo
