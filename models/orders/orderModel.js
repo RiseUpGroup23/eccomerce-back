@@ -4,13 +4,11 @@ const mongoose = require('mongoose');
 const orderSchema = new mongoose.Schema({
     orderId: {
         type: Number,
-        unique: true, // Asegura que cada ID de orden sea único
-        required: true
+        unique: true
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        ref: 'User'
     },
     products: [{
         quantity: {
