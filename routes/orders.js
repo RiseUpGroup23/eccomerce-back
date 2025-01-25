@@ -4,18 +4,8 @@ const Order = require('../models/orders/orderModel');
 
 // Crear una nueva orden
 router.post('/create', async (req, res) => {
-    const { user, products, totalAmount, orderStatus, shippingAddress, paymentMethod, paymentStatus } = req.body;
-
     try {
-        const newOrder = new Order({
-            user,
-            products,
-            totalAmount,
-            orderStatus: orderStatus || 'pending',  // Valor por defecto
-            logistics,
-            paymentMethod,
-            paymentStatus: paymentStatus || 'pending', // Valor por defecto
-        });
+        const newOrder = new Order(req.body);
 
         await newOrder.save();
         res.status(201).json(newOrder);  // Responde con la orden creada
