@@ -12,7 +12,7 @@ router.post('/create', async (req, res) => {
             products,
             totalAmount,
             orderStatus: orderStatus || 'pending',  // Valor por defecto
-            shippingAddress,
+            logistics,
             paymentMethod,
             paymentStatus: paymentStatus || 'pending', // Valor por defecto
         });
@@ -101,3 +101,5 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({ message: 'Error al eliminar la orden' });
     }
 });
+
+module.exports = router
