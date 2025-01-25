@@ -7,9 +7,15 @@ const orderSchema = new mongoose.Schema({
         ref: 'User',
     },
     products: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Producto',
-        required: true
+        quantity: {
+            type: Number,
+            required: true
+        },
+        product: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Producto',
+            required: true
+        }
     }],
     totalAmount: {
         type: Number,
