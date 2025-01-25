@@ -29,6 +29,7 @@ const searchRoutes = require('./routes/search');
 const adminRoutes = require('./routes/admin');
 const cloudinaryRoutes = require('./routes/cloudinary');
 const ordersRoutes = require('./routes/orders');
+const paymentsRoutes = require('./routes/payments');
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);
@@ -43,6 +44,7 @@ app.use('/search', searchRoutes);
 app.use('/admin', adminRoutes);
 app.use('/cloudinary', cloudinaryRoutes);
 app.use('/orders', ordersRoutes);
+app.use('/payments', paymentsRoutes);
 
 
 
