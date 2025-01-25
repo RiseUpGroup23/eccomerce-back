@@ -44,29 +44,29 @@ router.get('/:orderId', async (req, res) => {
     }
 });
 
-// Actualizar una orden por ID
-router.put('/:id', async (req, res) => {
-    const { id } = req.params;
-    const { products, totalAmount, orderStatus, shippingAddress, paymentMethod, paymentStatus } = req.body;
+// Actualizar una orden por orderId
+router.put('/:orderId', async (req, res) => {
+    const { orderId } = req.params;
+    const body = req.body;  // Usamos el objeto completo del cuerpo de la solicitud
 
     try {
-        const order = await Order.findById(id);
+        const order = await Order.findOne({ orderId });
 
         if (!order) {
             return res.status(404).json({ message: 'Orden no encontrada' });
         }
 
-        // Actualizamos los campos que se pasan en el cuerpo de la solicitud
-        order.products = products || order.products;
-        order.totalAmount = totalAmount || order.totalAmount;
-        order.orderStatus = orderStatus || order.orderStatus;
-        order.shippingAddress = shippingAddress || order.shippingAddress;
-        order.paymentMethod = paymentMethod || order.paymentMethod;
-        order.paymentStatus = paymentStatus || order.paymentStatus;
-        order.updatedAt = Date.now();  // Actualizamos la fecha de modificación
+        // Usamos $set para actualizar directamente los campos en la base de datos
+        await Order.updateOne({ orderId }, {
+            $set: {
+                ...body,  // Usamos todo el cuerpo para actualizar los campos
+                updatedAt: Date.now()  // Aseguramos que la fecha de actualización sea correcta
+            }
+        });
 
-        await order.save();
-        res.status(200).json(order);  // Responde con la orden actualizada
+        // Buscamos la orden actualizada y la devolvemos
+        const updatedOrder = await Order.findOne({ orderId });
+        res.status(200).json(updatedOrder);  // Responde con la orden actualizada
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al actualizar la orden' });
