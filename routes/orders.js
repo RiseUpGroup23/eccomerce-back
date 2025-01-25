@@ -26,12 +26,12 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Obtener una orden por ID
-router.get('/:id', async (req, res) => {
-    const { id } = req.params;
+// Obtener una orden por orderId
+router.get('/:orderId', async (req, res) => {
+    const { orderId } = req.params;
 
     try {
-        const order = await Order.findById(id).populate('user').populate('products.productId');
+        const order = await Order.findOne({ orderId }).populate('user').populate('products.productId');
 
         if (!order) {
             return res.status(404).json({ message: 'Orden no encontrada' });
