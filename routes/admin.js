@@ -1,6 +1,7 @@
 const express = require('express');
 const Product = require('../models/product/productModel');
-const Category = require('../models/category/categoryModel');  // Importar el modelo de Categoría
+const Category = require('../models/category/categoryModel');
+const Order = require('../models/orders/orderModel');
 
 const router = express.Router();
 
@@ -104,6 +105,45 @@ router.get('/categories', async (req, res) => {
         // Enviar la respuesta con las categorías, el total de elementos y si hay una siguiente página
         res.json({
             categories,
+            nextPage,
+            totalOfItems
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Ruta para obtener ordenes con paginación, filtros por nombre
+router.get('/orders', async (req, res) => {
+    try {
+        const { page = 1, itemsPerPage = 10, q } = req.query;
+
+        // Calcular la cantidad de saltos (skip) y el límite (limit) de las categorías
+        const skip = (page - 1) * itemsPerPage;
+        const limit = parseInt(itemsPerPage, 10);
+
+        // Filtro de nombre (q) si se pasa en la consulta
+        const filterConditions = {};
+
+        // Filtro por nombre de categoría
+        if (q) {
+            filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
+        }
+
+        // Consultar las categorías con los filtros y paginación
+        const orders = await Order.find(filterConditions)
+            .skip(skip)
+            .limit(limit);
+
+        // Contar el total de categorías para calcular el total de páginas
+        const totalOfItems = await Order.countDocuments(filterConditions);
+
+        // Determinar si hay más páginas
+        const nextPage = (page * itemsPerPage) < totalOfItems;
+
+        // Enviar la respuesta con las categorías, el total de elementos y si hay una siguiente página
+        res.json({
+            orders,
             nextPage,
             totalOfItems
         });
