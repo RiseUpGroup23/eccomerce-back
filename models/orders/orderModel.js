@@ -59,7 +59,8 @@ const orderSchema = new mongoose.Schema({
         }
     },
     paymentMethod: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Payment',
         required: true
     },
     paymentStatus: {
