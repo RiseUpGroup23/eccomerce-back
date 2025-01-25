@@ -31,7 +31,7 @@ router.get('/:orderId', async (req, res) => {
     const { orderId } = req.params;
 
     try {
-        const order = await Order.findOne({ orderId }).populate('user').populate('products.productId');
+        const order = await Order.findOne({ orderId }).populate('user').populate('products.product');
 
         if (!order) {
             return res.status(404).json({ message: 'Orden no encontrada' });
