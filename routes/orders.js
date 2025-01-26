@@ -1,14 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/orders/orderModel');
+const User = require('../models/user/userModel');
 
-// Crear una nueva orden
 router.post('/create', async (req, res) => {
     try {
-        const newOrder = new Order(req.body);
+        // Buscar el usuario por el email
+        let user = await User.findOne({ email: req.body.user.email });
 
+        // Si el usuario no existe, crearlo
+        if (!user) {
+            user = new User(req.body.user);  // Crear el usuario con los datos proporcionados
+            await user.save();  // Guardar el nuevo usuario en la base de datos
+        }
+
+        // Crear la nueva orden y asignar el user.id
+        const newOrder = new Order({
+            ...req.body,
+            user: user._id // Asignar el ID del usuario encontrado o creado
+        });
+
+        // Guardar la nueva orden
         await newOrder.save();
-        res.status(201).json(newOrder);  // Responde con la orden creada
+
+        // Responder con la orden creada
+        res.status(201).json(newOrder);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al crear la orden' });
