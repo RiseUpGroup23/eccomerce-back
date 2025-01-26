@@ -132,6 +132,7 @@ router.get('/orders', async (req, res) => {
 
         // Consultar las categorías con los filtros y paginación
         const orders = await Order.find(filterConditions)
+            .populate("user")
             .skip(skip)
             .limit(limit);
 
