@@ -18,7 +18,7 @@ const paymentSchema = new mongoose.Schema({
     },
     availability: {
         type: String,  // Estado de disponibilidad del método de pago
-        required: true
+        required: false
     },
     info: {
         type: String,  // Información adicional sobre el método de pago

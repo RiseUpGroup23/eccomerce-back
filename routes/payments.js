@@ -44,6 +44,13 @@ router.get('/', async (req, res) => {
                     active: true,
                     createdAt: new Date(),
                     updatedAt: new Date()
+                },
+                {
+                    id: "promisory",
+                    name: "Pago contraentrega",
+                    active: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
                 }
             ];
 
