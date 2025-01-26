@@ -151,7 +151,7 @@ router.get('/orders', async (req, res) => {
             sortConditions['totalAmount'] = sortOrder === 'asc' ? 1 : -1;
         } else {
             // Por defecto, ordenar por orderId
-            sortConditions['orderId'] = sortOrder === 'asc' ? 1 : -1;
+            sortConditions['orderId'] = sortOrder === 'asc' ? -1 : 1;
         }
 
         // Consultar las órdenes con los filtros y paginación
