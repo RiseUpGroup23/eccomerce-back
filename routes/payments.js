@@ -18,8 +18,42 @@ router.post('/create', async (req, res) => {
 // Obtener todos los métodos de pago
 router.get('/', async (req, res) => {
     try {
+        // Verificar si ya existen los métodos de pago predeterminados
+        const existingPayments = await Payment.find();
+
+        // Si no existen, crearlos por defecto
+        if (existingPayments.length === 0) {
+            const defaultPayments = [
+                {
+                    id: "toSet",
+                    name: "Acordar con el vendedor", // Aquí puedes agregar un nombre o descripción
+                    active: true,
+                    createdAt: new Date(), // Agrega la fecha de creación
+                    updatedAt: new Date()  // Fecha de actualización
+                },
+                {
+                    id: "bankTransfer",
+                    name: "Transferencia",
+                    active: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                },
+                {
+                    id: "mercadoPago",
+                    name: "Mercado Pago",
+                    active: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            ];
+
+            // Insertar los métodos de pago predeterminados
+            await Payment.insertMany(defaultPayments);
+        }
+
+        // Obtener todos los métodos de pago y devolverlos
         const payments = await Payment.find();
-        res.status(200).json(payments);  // Responde con todos los métodos de pago
+        res.status(200).json(payments);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al obtener los métodos de pago' });
