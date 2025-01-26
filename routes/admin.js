@@ -9,7 +9,7 @@ const router = express.Router();
 // Ruta para obtener productos con paginación, filtros por nombre, categoría y subcategoría
 router.get('/products', async (req, res) => {
     try {
-        const { page = 1, itemsPerPage = 10, category, subcategory, q } = req.query;
+        const { page = 1, itemsPerPage = 10, category, subcategory, q, sortBy = 'name', sortOrder = 'asc' } = req.query;
 
         // Calcular la cantidad de saltos (skip) y el límite (limit) de los productos
         const skip = (page - 1) * itemsPerPage;
@@ -51,12 +51,22 @@ router.get('/products', async (req, res) => {
             }
         }
 
-        // Consultar los productos con filtros y paginación, y poblar las relaciones
+        // Ordenar por el campo seleccionado
+        const sortFields = {};
+        if (['stock', 'sellingPrice', 'name'].includes(sortBy)) {
+            sortFields[sortBy] = sortOrder === 'desc' ? -1 : 1; // 1 es ascendente, -1 es descendente
+        } else {
+            // Si no se proporciona un campo válido, ordenar por nombre de forma ascendente por defecto
+            sortFields['name'] = 1;
+        }
+
+        // Consultar los productos con filtros, paginación, y ordenar por los campos seleccionados
         const productos = await Product.find(filterConditions)
             .skip(skip)
             .limit(limit)
+            .sort(sortFields) // Aplicar el orden
             .populate('category')        // Poblar la relación con la categoría
-            .populate('subcategory');        // Poblar la relación con la categoría
+            .populate('subcategory');    // Poblar la relación con la subcategoría
 
         // Contar el total de productos para calcular el total de páginas
         const totalOfItems = await Product.countDocuments(filterConditions);
@@ -74,6 +84,7 @@ router.get('/products', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Ruta para obtener categorías con paginación, filtros por nombre
 router.get('/categories', async (req, res) => {
