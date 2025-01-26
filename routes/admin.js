@@ -125,36 +125,49 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-// Ruta para obtener ordenes con paginación, filtros por nombre
 router.get('/orders', async (req, res) => {
     try {
-        const { page = 1, itemsPerPage = 10, q } = req.query;
+        const { page = 1, itemsPerPage = 10, q, sortBy = 'orderId', sortOrder = 'asc' } = req.query;
 
-        // Calcular la cantidad de saltos (skip) y el límite (limit) de las categorías
+        // Calcular la cantidad de saltos (skip) y el límite (limit) de las órdenes
         const skip = (page - 1) * itemsPerPage;
         const limit = parseInt(itemsPerPage, 10);
 
         // Filtro de nombre (q) si se pasa en la consulta
         const filterConditions = {};
 
-        // Filtro por nombre de categoría
+        // Filtro por nombre de pedido (q)
         if (q) {
-            filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
+            filterConditions.orderId = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
         }
 
-        // Consultar las categorías con los filtros y paginación
-        const orders = await Order.find(filterConditions)
-            .populate("user")
-            .skip(skip)
-            .limit(limit);
+        // Crear el objeto de ordenación
+        const sortConditions = {};
+        if (sortBy === 'customerName') {
+            sortConditions['user.name'] = sortOrder === 'asc' ? 1 : -1;
+        } else if (sortBy === 'createdAt') {
+            sortConditions['createdAt'] = sortOrder === 'asc' ? 1 : -1;
+        } else if (sortBy === 'totalAmount') {
+            sortConditions['totalAmount'] = sortOrder === 'asc' ? 1 : -1;
+        } else {
+            // Por defecto, ordenar por orderId
+            sortConditions['orderId'] = sortOrder === 'asc' ? 1 : -1;
+        }
 
-        // Contar el total de categorías para calcular el total de páginas
+        // Consultar las órdenes con los filtros y paginación
+        const orders = await Order.find(filterConditions)
+            .populate("user") // Suponiendo que la propiedad 'user' es un ObjectId de la colección de usuarios
+            .skip(skip)
+            .limit(limit)
+            .sort(sortConditions);  // Aplicar la ordenación
+
+        // Contar el total de órdenes para calcular el total de páginas
         const totalOfItems = await Order.countDocuments(filterConditions);
 
         // Determinar si hay más páginas
         const nextPage = (page * itemsPerPage) < totalOfItems;
 
-        // Enviar la respuesta con las categorías, el total de elementos y si hay una siguiente página
+        // Enviar la respuesta con las órdenes, el total de elementos y si hay una siguiente página
         res.json({
             orders,
             nextPage,
@@ -164,6 +177,7 @@ router.get('/orders', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Ruta para obtener usuarios con paginación y filtro por nombre, email o teléfono
 router.get('/users', async (req, res) => {
