@@ -2,6 +2,7 @@ const express = require('express');
 const Product = require('../models/product/productModel');
 const Category = require('../models/category/categoryModel');
 const Order = require('../models/orders/orderModel');
+const User = require('../models/users/userModel');
 
 const router = express.Router();
 
@@ -145,6 +146,48 @@ router.get('/orders', async (req, res) => {
         // Enviar la respuesta con las categorías, el total de elementos y si hay una siguiente página
         res.json({
             orders,
+            nextPage,
+            totalOfItems
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Ruta para obtener usuarios con paginación y filtro por nombre, email o teléfono
+router.get('/users', async (req, res) => {
+    try {
+        const { page = 1, itemsPerPage = 10, q } = req.query;  // Obtener la página, items por página y la query de búsqueda
+
+        // Calcular la cantidad de saltos (skip) y el límite (limit) de la paginación
+        const skip = (page - 1) * itemsPerPage;
+        const limit = parseInt(itemsPerPage, 10);
+
+        // Construir las condiciones de búsqueda (filtro por name, email o phone)
+        const filterConditions = {};
+
+        if (q) {
+            filterConditions.$or = [
+                { name: { $regex: new RegExp(q, 'i') } },  // Filtro por nombre
+                { email: { $regex: new RegExp(q, 'i') } }, // Filtro por correo
+                { phone: { $regex: new RegExp(q, 'i') } }  // Filtro por teléfono
+            ];
+        }
+
+        // Consultar los usuarios con los filtros y la paginación
+        const users = await User.find(filterConditions)
+            .skip(skip)
+            .limit(limit);
+
+        // Contar el total de usuarios que coinciden con las condiciones para calcular el total de páginas
+        const totalOfItems = await User.countDocuments(filterConditions);
+
+        // Determinar si hay más páginas
+        const nextPage = (page * itemsPerPage) < totalOfItems;
+
+        // Enviar la respuesta con los usuarios, el total de elementos y si hay una siguiente página
+        res.json({
+            users,
             nextPage,
             totalOfItems
         });
