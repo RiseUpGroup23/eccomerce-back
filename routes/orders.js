@@ -81,7 +81,7 @@ router.put('/:orderId', async (req, res) => {
         });
 
         // Buscamos la orden actualizada y la devolvemos
-        const updatedOrder = await Order.findOne({ orderId });
+        const updatedOrder = await Order.findOne({ orderId }).populate('user').populate('products.product').populate('paymentMethod');
         res.status(200).json(updatedOrder);  // Responde con la orden actualizada
     } catch (error) {
         console.error(error);
