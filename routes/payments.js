@@ -92,13 +92,7 @@ router.put('/:id', async (req, res) => {
     try {
         const payment = await Payment.findOneAndUpdate(
             { id },
-            {
-                active: req.body.active,
-                name: req.body.name,
-                availability: req.body.availability,
-                info: req.body.info,
-                icon: req.body.icon
-            },
+            req.body,
             { new: true }
         );
 
