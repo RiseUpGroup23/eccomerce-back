@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/orders/orderModel');
+const Product = require('../models/product/productModel');
 const User = require('../models/user/userModel');
 
 router.post('/create', async (req, res) => {
@@ -19,6 +20,23 @@ router.post('/create', async (req, res) => {
             ...req.body,
             user: user._id // Asignar el ID del usuario encontrado o creado
         });
+
+        // Iterar sobre los productos de la orden y restar el stock
+        for (let productItem of req.body.products) {
+            // Buscar el producto por su ID
+            let product = await Product.findById(productItem.product);
+
+            // Si el producto existe y tiene suficiente stock, restar la cantidad
+            if (product && product.stock >= productItem.quantity) {
+                product.stock -= productItem.quantity;
+                await product.save(); // Guardar el producto con el nuevo stock
+            } else {
+                // Si no hay suficiente stock, devolver un error
+                return res.status(400).json({
+                    message: `No hay suficiente stock para el producto ${product.name}`
+                });
+            }
+        }
 
         // Guardar la nueva orden
         await newOrder.save();
