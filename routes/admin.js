@@ -262,7 +262,7 @@ router.get('/orders/stats', async (req, res) => {
             const dayIndex = salesData.xAxis.indexOf(orderDate);
             if (dayIndex !== -1) {
                 salesData.yAxisOrders[dayIndex] += 1; // Incrementamos la cantidad de órdenes
-                salesData.yAxisSales[dayIndex] += order.totalAmount; // Sumar el total de la venta
+                salesData.yAxisSales[dayIndex] += order.totalAmount / 100; // Dividimos el totalAmount por 100 antes de sumarlo
             }
         });
 
@@ -270,13 +270,14 @@ router.get('/orders/stats', async (req, res) => {
         res.status(200).json({
             xAxis: salesData.xAxis,
             yAxisOrders: salesData.yAxisOrders,
-            yAxisSales: salesData.yAxisSales
+            yAxisSales: salesData.yAxisSales.map((e) => e.toFixed(2))
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al obtener las estadísticas de ventas y órdenes' });
     }
 });
+
 
 
 
