@@ -28,7 +28,11 @@ const paymentSchema = new mongoose.Schema({
         {
             type: String
         }
-    ]
+    ],
+    finishWp: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true  // Agrega los campos createdAt y updatedAt automáticamente
 });
