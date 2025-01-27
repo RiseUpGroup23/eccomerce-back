@@ -221,4 +221,63 @@ router.get('/users', async (req, res) => {
     }
 });
 
+
+// Endpoint /stats para obtener las ventas y las órdenes de los últimos 30 días
+router.get('/orders/stats', async (req, res) => {
+    try {
+        // Obtener la fecha de hace 30 días
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+        // Filtrar las órdenes de los últimos 30 días
+        const orders = await Order.find({
+            createdAt: { $gte: thirtyDaysAgo } // Órdenes creadas desde hace 30 días hasta hoy
+        });
+
+        // Función para formatear las fechas como dd/mm/yyyy
+        const formatDate = (date) => {
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+
+        // Inicializar las estructuras para almacenar las ventas y las órdenes por día
+        const last30Days = Array.from({ length: 30 }, (_, i) => {
+            const day = new Date();
+            day.setDate(today.getDate() - i); // Ajustamos la fecha hacia atrás
+            return formatDate(day); // Usamos la función formatDate para asegurar un formato consistente
+        });
+
+        const salesData = {
+            xAxis: last30Days,
+            yAxisOrders: new Array(30).fill(0), // Inicia con 0 órdenes por día
+            yAxisSales: new Array(30).fill(0)   // Inicia con 0 ventas por día
+        };
+
+        // Recorremos las órdenes y las asignamos al día correspondiente
+        orders.forEach(order => {
+            const orderDate = formatDate(new Date(order.createdAt));
+            const dayIndex = salesData.xAxis.indexOf(orderDate);
+            if (dayIndex !== -1) {
+                salesData.yAxisOrders[dayIndex] += 1; // Incrementamos la cantidad de órdenes
+                salesData.yAxisSales[dayIndex] += order.totalAmount; // Sumar el total de la venta
+            }
+        });
+
+        // Responder con las estadísticas estructuradas
+        res.status(200).json({
+            xAxis: salesData.xAxis,
+            yAxisOrders: salesData.yAxisOrders,
+            yAxisSales: salesData.yAxisSales
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error al obtener las estadísticas de ventas y órdenes' });
+    }
+});
+
+
+
 module.exports = router;
