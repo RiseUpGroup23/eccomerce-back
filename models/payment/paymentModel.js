@@ -23,7 +23,12 @@ const paymentSchema = new mongoose.Schema({
     info: {
         type: String,  // Información adicional sobre el método de pago
         default: ''
-    }
+    },
+    activeInMethods: [
+        {
+            type: String
+        }
+    ]
 }, {
     timestamps: true  // Agrega los campos createdAt y updatedAt automáticamente
 });
