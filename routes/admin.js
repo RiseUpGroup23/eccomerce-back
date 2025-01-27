@@ -222,61 +222,56 @@ router.get('/users', async (req, res) => {
 });
 
 
-// Endpoint /stats para obtener las ventas y las órdenes de los últimos 30 días
+// Endpoint /stats para obtener las ventas y las órdenes de los últimos 14 días
 router.get('/orders/stats', async (req, res) => {
     try {
-        // Obtener la fecha de hace 30 días
+        // Obtener la fecha de hace 14 días
         const today = new Date();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(today.getDate() - 30);
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(today.getDate() - 14);
 
-        // Filtrar las órdenes de los últimos 30 días
+        // Filtrar las órdenes de los últimos 14 días
         const orders = await Order.find({
-            createdAt: { $gte: thirtyDaysAgo } // Órdenes creadas desde hace 30 días hasta hoy
+            createdAt: { $gte: fourteenDaysAgo } // Órdenes creadas desde hace 14 días hasta hoy
         });
 
-        // Función para formatear las fechas como dd/mm/yyyy
-        const formatDate = (date) => {
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
+        // Función para formatear la fecha como el número del día
+        const formatDay = (date) => {
+            return date.getDate(); // Solo obtenemos el número del día
         };
 
-        // Inicializar las estructuras para almacenar las ventas y las órdenes por día
-        const last30Days = Array.from({ length: 30 }, (_, i) => {
+        // Inicializar las estructuras para almacenar las órdenes por día
+        const last14Days = Array.from({ length: 14 }, (_, i) => {
             const day = new Date();
             day.setDate(today.getDate() - i); // Ajustamos la fecha hacia atrás
-            return formatDate(day); // Usamos la función formatDate para asegurar un formato consistente
-        });
+            return formatDay(day); // Usamos la función formatDay para obtener solo el número del día
+        }).reverse(); // Revertimos el array para que los días más recientes estén al final
 
         const salesData = {
-            xAxis: last30Days,
-            yAxisOrders: new Array(30).fill(0), // Inicia con 0 órdenes por día
-            yAxisSales: new Array(30).fill(0)   // Inicia con 0 ventas por día
+            xAxis: last14Days,
+            yAxisOrders: new Array(14).fill(0)   // Inicia con 0 órdenes por día
         };
 
         // Recorremos las órdenes y las asignamos al día correspondiente
         orders.forEach(order => {
-            const orderDate = formatDate(new Date(order.createdAt));
+            const orderDate = new Date(order.createdAt).getDate(); // Solo el número del día
             const dayIndex = salesData.xAxis.indexOf(orderDate);
             if (dayIndex !== -1) {
                 salesData.yAxisOrders[dayIndex] += 1; // Incrementamos la cantidad de órdenes
-                salesData.yAxisSales[dayIndex] += order.totalAmount / 100; // Dividimos el totalAmount por 100 antes de sumarlo
             }
         });
 
         // Responder con las estadísticas estructuradas
         res.status(200).json({
             xAxis: salesData.xAxis,
-            yAxisOrders: salesData.yAxisOrders,
-            yAxisSales: salesData.yAxisSales.map((e) => e.toFixed(2))
+            yAxisOrders: salesData.yAxisOrders
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error al obtener las estadísticas de ventas y órdenes' });
+        res.status(500).json({ message: 'Error al obtener las estadísticas de órdenes' });
     }
 });
+
 
 
 
