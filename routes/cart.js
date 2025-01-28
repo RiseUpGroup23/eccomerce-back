@@ -62,18 +62,31 @@ const clearExpiredCarts = async () => {
 
 // Endpoint para simular el carrito (verificar disponibilidad sin reservar productos)
 router.post('/simulate-cart', async (req, res) => {
-    const { cartItems } = req.body;
+    const { cartItems, cartId } = req.body;
 
     try {
-        // 1. Obtener los productos necesarios con los campos que necesitamos
-        const productIds = cartItems.map(item => item.product);
+        // 1. Si se pasa un cartId, buscar el carrito correspondiente
+        let cart = null;
+        if (cartId) {
+            cart = await Cart.findById(cartId);
+
+            if (!cart) {
+                return res.status(404).json({ message: 'Carrito no encontrado' });
+            }
+        }
+
+        // 2. Si no se pasa cartId, usamos los cartItems proporcionados en la solicitud
+        const itemsToSimulate = cartId ? cart.items : cartItems;
+
+        // 3. Obtener los productos necesarios con los campos que necesitamos
+        const productIds = itemsToSimulate.map(item => item.product);
 
         // Usamos `.select()` para traer solo los campos que necesitamos: _id y stock
         const products = await Producto.find({ '_id': { $in: productIds } })
             .select('_id stock name'); // Traemos solo _id, stock y nombre
 
-        // 2. Verificar la disponibilidad de los productos
-        const productsAvailability = cartItems.map((item) => {
+        // 4. Verificar la disponibilidad de los productos
+        const productsAvailability = itemsToSimulate.map((item) => {
             const product = products.find(p => p._id.toString() === item.product);
 
             if (product) {
@@ -91,13 +104,14 @@ router.post('/simulate-cart', async (req, res) => {
             }
         });
 
-        // 3. Enviar la respuesta con la disponibilidad de los productos
+        // 5. Enviar la respuesta con la disponibilidad de los productos
         res.json({ simulation: productsAvailability });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al verificar la disponibilidad de los productos' });
     }
 });
+
 
 // Endpoint para reservar los productos en el carrito
 router.post('/reserve-cart', async (req, res) => {
