@@ -235,16 +235,16 @@ router.get('/orders/stats', async (req, res) => {
             createdAt: { $gte: fourteenDaysAgo } // Órdenes creadas desde hace 14 días hasta hoy
         });
 
-        // Función para formatear la fecha como el número del día
-        const formatDay = (date) => {
-            return date.getDate(); // Solo obtenemos el número del día
+        // Función para obtener solo el número del día en hora local
+        const getDayNumberLocal = (date) => {
+            return date.getDate(); // Solo el número del día
         };
 
         // Inicializar las estructuras para almacenar las órdenes por día
         const last14Days = Array.from({ length: 14 }, (_, i) => {
             const day = new Date();
             day.setDate(today.getDate() - i); // Ajustamos la fecha hacia atrás
-            return formatDay(day); // Usamos la función formatDay para obtener solo el número del día
+            return getDayNumberLocal(day); // Usamos la función getDayNumberLocal para obtener solo el número del día
         }).reverse(); // Revertimos el array para que los días más recientes estén al final
 
         const salesData = {
@@ -254,8 +254,9 @@ router.get('/orders/stats', async (req, res) => {
 
         // Recorremos las órdenes y las asignamos al día correspondiente
         orders.forEach(order => {
-            const orderDate = new Date(order.createdAt).getDate(); // Solo el número del día
-            const dayIndex = salesData.xAxis.indexOf(orderDate);
+            const orderDate = new Date(order.createdAt); // Convertir a fecha
+            const orderDayNumber = getDayNumberLocal(orderDate); // Obtener solo el número del día en hora local
+            const dayIndex = salesData.xAxis.indexOf(orderDayNumber);
             if (dayIndex !== -1) {
                 salesData.yAxisOrders[dayIndex] += 1; // Incrementamos la cantidad de órdenes
             }
@@ -271,9 +272,5 @@ router.get('/orders/stats', async (req, res) => {
         res.status(500).json({ message: 'Error al obtener las estadísticas de órdenes' });
     }
 });
-
-
-
-
 
 module.exports = router;
