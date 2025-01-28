@@ -113,40 +113,57 @@ router.post('/reserve-cart', async (req, res) => {
         // Si el carrito no existe, crear uno nuevo
         if (!cart) {
             cart = new Cart({
-                items: []
+                items: cartItems
             });
+            await cart.save();
+        } else {
+            // 3. Actualizar la fecha de modificación del carrito para renovar la expiración
+            cart.updatedAt = new Date();
+
+            // 4. Obtener los productos necesarios con los campos que necesitamos
+            const productIds = cartItems.map(item => item.product);
+
+            // Usamos `.select()` para traer solo los campos que necesitamos: _id y stock
+            const products = await Producto.find({ '_id': { $in: productIds } })
+                .select('_id stock name'); // Traemos solo _id y stock
+
+            // 5. Reducir el stock de los productos que están disponibles
+            let itemsUpdated = [];
+
+            for (const item of cartItems) {
+                const product = products.find(p => p._id.toString() === item.product);
+
+                if (product && product.stock >= item.quantity) {
+                    // Reducir el stock de los productos reservados
+                    product.stock -= item.quantity;
+                    await product.save();
+
+                    // Agregar el producto al carrito
+                    itemsUpdated.push({
+                        product: item.product,
+                        quantity: item.quantity
+                    });
+                } else {
+                    // Si el producto no tiene stock suficiente, retornar un error
+                    return res.status(400).json({ message: `Producto ${item.product} no tiene suficiente stock` });
+                }
+            }
+
+            // 6. Reemplazar los items actuales con los nuevos productos
+            cart.items = itemsUpdated;
+
+            // Guardar los cambios en el carrito
             await cart.save();
         }
 
-        // 3. Actualizar la fecha de modificación del carrito para renovar la expiración
-        cart.updatedAt = new Date();
-        await cart.save();
-
-        // 4. Obtener los productos necesarios con los campos que necesitamos
-        const productIds = cartItems.map(item => item.product);
-
-        // Usamos `.select()` para traer solo los campos que necesitamos: _id y stock
-        const products = await Producto.find({ '_id': { $in: productIds } })
-            .select('_id stock name'); // Traemos solo _id y stock
-
-        // 5. Reducir el stock de los productos que están disponibles
-        for (const item of cartItems) {
-            const product = products.find(p => p._id.toString() === item.product);
-
-            if (product && product.stock >= item.quantity) {
-                // Reducir el stock de los productos reservados
-                product.stock -= item.quantity;
-                await product.save();
-            }
-        }
-
-        // 6. Confirmar la reserva sin devolver información del stock
+        // 7. Confirmar la reserva sin devolver información del stock
         res.json({ message: 'Productos reservados con éxito', cartId: cart._id });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al reservar los productos' });
     }
 });
+
 
 // Obtener un carrito por ID
 router.get('/:cartId', async (req, res) => {
