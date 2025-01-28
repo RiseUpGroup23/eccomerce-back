@@ -62,7 +62,7 @@ const clearExpiredCarts = async () => {
 
 // Endpoint para simular el carrito (verificar disponibilidad sin reservar productos)
 router.post('/simulate-cart', async (req, res) => {
-    const { cartItems } = req.body;
+    const { cartItems, cartId } = req.body;
 
     try {
         // 1. Obtener los productos necesarios con los campos que necesitamos
@@ -72,12 +72,15 @@ router.post('/simulate-cart', async (req, res) => {
         const products = await Producto.find({ '_id': { $in: productIds } })
             .select('_id stock name'); // Traemos solo _id, stock y nombre
 
+        const cart = await Cart.findOne({ _id: cartId })
+
         // 2. Verificar la disponibilidad de los productos
         const productsAvailability = cartItems.map((item) => {
             const product = products.find(p => p._id.toString() === item.product);
 
             if (product) {
-                const isAvailable = product.stock >= item.quantity;
+                const alreadyInCart = cart && cart.items.find(cartItem => cartItem.product === product._id).quantity
+                const isAvailable = (product.stock + (alreadyInCart ?? 0)) >= item.quantity;
                 return {
                     name: product.name,
                     product: product._id, // Solo devolver el _id del producto
