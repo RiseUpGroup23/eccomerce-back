@@ -5,54 +5,122 @@ const crypto = require('crypto');
 
 const router = express.Router();
 
-// GET Minicart: recibo los id me devuelve todos los datos de los productos
-router.post("/get-minicart", async (req, res) => {
-    const { cart } = req.body;
+// Limite de 10 minutos para los carritos
+const CART_EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutos en milisegundos
+
+// Función para eliminar carritos vencidos y restaurar el stock
+const clearExpiredCarts = async () => {
+    const expiredCarts = await Cart.find({
+        updatedAt: { $lt: new Date(Date.now() - CART_EXPIRATION_TIME) }
+    });
+
+    for (const cart of expiredCarts) {
+        // Restaurar el stock de los productos en los carritos vencidos
+        for (const item of cart.items) {
+            const product = await Producto.findById(item.product);
+            if (product) {
+                product.stock += item.quantity;
+                await product.save();
+            }
+        }
+
+        // Eliminar los carritos vencidos
+        await Cart.deleteOne({ _id: cart._id });
+    }
+};
+
+// Endpoint para simular el carrito (verificar disponibilidad sin reservar productos)
+router.post('/simulate-cart', async (req, res) => {
+    const { cartItems } = req.body;
 
     try {
-        // Extraemos solo los IDs de los productos del carrito
-        const productIds = cart.map(item => item.id);
+        // 1. Obtener los productos necesarios con los campos que necesitamos
+        const productIds = cartItems.map(item => item.product);
 
-        // Realizamos la búsqueda de todos los productos que coinciden con los IDs
-        const products = await Producto.find({
-            _id: { $in: productIds }
+        // Usamos `.select()` para traer solo los campos que necesitamos: _id y stock
+        const products = await Producto.find({ '_id': { $in: productIds } })
+            .select('_id stock name'); // Traemos solo _id, stock y nombre
+
+        // 2. Verificar la disponibilidad de los productos
+        const productsAvailability = cartItems.map((item) => {
+            const product = products.find(p => p._id.toString() === item.product);
+
+            if (product) {
+                const isAvailable = product.stock >= item.quantity;
+                return {
+                    name: product.name,
+                    product: product._id, // Solo devolver el _id del producto
+                    stockAvailable: isAvailable, // Si el stock es suficiente
+                };
+            } else {
+                return {
+                    product: item.productId, // Si no se encuentra el producto, devolver el productId de la solicitud
+                    stockAvailable: false, // No disponible si no se encontró el producto
+                };
+            }
         });
 
-        // Para devolver un array con los productos y su cantidad (de acuerdo al carrito)
-        const result = cart.map(item => {
-            const product = products.find(p => p._id.toString() === item.id);
-            return {
-                ...product.toObject(), // Convirtiendo el objeto de mongoose a JSON
-                quantity: item.quantity
-            };
-        });
-
-        // Respondemos con los productos encontrados y sus cantidades
-        res.json(result);
+        // 3. Enviar la respuesta con la disponibilidad de los productos
+        res.json({ simulation: productsAvailability });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error al obtener los productos" });
+        res.status(500).json({ message: 'Error al verificar la disponibilidad de los productos' });
     }
 });
 
+// Endpoint para reservar los productos en el carrito
+router.post('/reserve-cart', async (req, res) => {
+    const { cartId, cartItems } = req.body;
 
-// Crear un carrito nuevo | a la hora de tocar el boton del carrito si aun no agregamos productos o creacion de pag
-router.post('/', async (req, res) => {
     try {
-        const cartId = crypto.randomUUID(); // Generar un ID único para el carrito
-        const newCart = new Cart({ cartId, items: [] }); // Incluye el cartId generado
-        const cartSaved = await newCart.save();
-        res.status(201).json(cartSaved);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        // 1. Eliminar los carritos vencidos
+        await clearExpiredCarts();
+
+        // 2. Verificar si el carrito existe
+        let cart = cartId && await Cart.findOne({ _id: cartId });
+
+        // Si el carrito no existe, crear uno nuevo
+        if (!cart) {
+            cart = new Cart({
+                items: []
+            });
+            await cart.save();
+        }
+
+        // 3. Actualizar la fecha de modificación del carrito para renovar la expiración
+        cart.updatedAt = new Date();
+        await cart.save();
+
+        // 4. Obtener los productos necesarios con los campos que necesitamos
+        const productIds = cartItems.map(item => item.product);
+
+        // Usamos `.select()` para traer solo los campos que necesitamos: _id y stock
+        const products = await Producto.find({ '_id': { $in: productIds } })
+            .select('_id stock name'); // Traemos solo _id y stock
+
+        // 5. Reducir el stock de los productos que están disponibles
+        for (const item of cartItems) {
+            const product = products.find(p => p._id.toString() === item.product);
+
+            if (product && product.stock >= item.quantity) {
+                // Reducir el stock de los productos reservados
+                product.stock -= item.quantity;
+                await product.save();
+            }
+        }
+
+        // 6. Confirmar la reserva sin devolver información del stock
+        res.json({ message: 'Productos reservados con éxito', cartId: cart._id });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error al reservar los productos' });
     }
 });
 
-
-// Obtener un carrito por ID | a la hora de querer mostrar el creado con el anterior id
+// Obtener un carrito por ID
 router.get('/:cartId', async (req, res) => {
     try {
-        const cart = await Cart.findOne({ _id: req.params.cartId }).populate('items.productId', 'nombre precio');
+        const cart = await Cart.findOne({ _id: req.params.cartId }).populate('items.productId', 'name price');
         if (!cart) return res.status(404).json({ error: 'Carrito no encontrado' });
         res.json(cart);
     } catch (err) {
@@ -60,7 +128,7 @@ router.get('/:cartId', async (req, res) => {
     }
 });
 
-// Agregar un producto al carrito | creo que se podria generar el carrito cuando se agregue aunque tambien estaria bien mostrarlo vacio
+// Agregar un producto al carrito
 router.post('/:cartId', async (req, res) => {
     try {
         const { productId, quantity } = req.body;
@@ -68,7 +136,7 @@ router.post('/:cartId', async (req, res) => {
         let cart = await Cart.findById(req.params.cartId);
 
         if (!cart) {
-            // Si no existe el carrito, crearlo | opte por esto para no crear carritos cada vez que e habra la pag, se podria ver de usar uno que se guarde en local storage, cookies y blabla, dejo las dos opciones pa queelijas
+            // Si no existe el carrito, crearlo
             cart = new Cart({ _id: req.params.cartId, items: [] });
         }
 
@@ -86,7 +154,7 @@ router.post('/:cartId', async (req, res) => {
     }
 });
 
-// Eliminar un producto del carrito | boton en el prodcuto en el carrito
+// Eliminar un producto del carrito
 router.delete('/:cartId/:productId', async (req, res) => {
     try {
         const { cartId, productId } = req.params;
@@ -102,7 +170,7 @@ router.delete('/:cartId/:productId', async (req, res) => {
     }
 });
 
-// Vaciar el carrito | "eliminar todos los productos" queda creado pero vacio
+// Vaciar el carrito
 router.delete('/:cartId', async (req, res) => {
     try {
         const cart = await Cart.findById(req.params.cartId);
@@ -116,4 +184,4 @@ router.delete('/:cartId', async (req, res) => {
     }
 });
 
-module.exports = router
+module.exports = router;
