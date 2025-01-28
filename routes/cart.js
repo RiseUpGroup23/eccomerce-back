@@ -180,48 +180,6 @@ router.get('/:cartId', async (req, res) => {
     }
 });
 
-// Agregar un producto al carrito
-router.post('/:cartId', async (req, res) => {
-    try {
-        const { productId, quantity } = req.body;
-
-        let cart = await Cart.findById(req.params.cartId);
-
-        if (!cart) {
-            // Si no existe el carrito, crearlo
-            cart = new Cart({ _id: req.params.cartId, items: [] });
-        }
-
-        const productIndex = cart.items.findIndex(item => item.productId.toString() === productId);
-        if (productIndex > -1) {
-            cart.items[productIndex].quantity += quantity;
-        } else {
-            cart.items.push({ productId, quantity });
-        }
-
-        const updatedCart = await cart.save();
-        res.json(updatedCart);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Eliminar un producto del carrito
-router.delete('/:cartId/:productId', async (req, res) => {
-    try {
-        const { cartId, productId } = req.params;
-
-        const cart = await Cart.findById(cartId);
-        if (!cart) return res.status(404).json({ error: 'Carrito no encontrado' });
-
-        cart.items = cart.items.filter(item => item.productId.toString() !== productId);
-        const updatedCart = await cart.save();
-        res.json(updatedCart);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // Vaciar el carrito y restaurar el stock de los productos
 router.delete('/:cartId', async (req, res) => {
     try {
