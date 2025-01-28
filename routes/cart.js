@@ -72,15 +72,15 @@ router.post('/simulate-cart', async (req, res) => {
         const products = await Producto.find({ '_id': { $in: productIds } })
             .select('_id stock name'); // Traemos solo _id, stock y nombre
 
-        const cart = await Cart.findOne({ _id: cartId })
+        const cart = cartId && await Cart.findOne({ _id: cartId });
 
         // 2. Verificar la disponibilidad de los productos
         const productsAvailability = cartItems.map((item) => {
-            const product = products.find(p => p._id.toString() === item.product);
+            const product = products.find(p => p._id.toString() === item.product.toString());
+            const alreadyInCart = cart && cart.items.find(elem => elem.product.toString() === item.product.toString());
 
             if (product) {
-                const alreadyInCart = cart && cart.items.find(cartItem => cartItem.product === product._id).quantity
-                const isAvailable = (product.stock + (alreadyInCart ?? 0)) >= item.quantity;
+                const isAvailable = (product.stock + (alreadyInCart ? alreadyInCart.quantity : 0)) >= item.quantity;
                 return {
                     name: product.name,
                     product: product._id, // Solo devolver el _id del producto
@@ -88,7 +88,7 @@ router.post('/simulate-cart', async (req, res) => {
                 };
             } else {
                 return {
-                    product: item.productId, // Si no se encuentra el producto, devolver el productId de la solicitud
+                    product: item.product, // Si no se encuentra el producto, devolver el productId de la solicitud
                     stockAvailable: false, // No disponible si no se encontró el producto
                 };
             }
@@ -101,6 +101,7 @@ router.post('/simulate-cart', async (req, res) => {
         res.status(500).json({ message: 'Error al verificar la disponibilidad de los productos' });
     }
 });
+
 
 // Endpoint para reservar los productos en el carrito
 router.post('/reserve-cart', async (req, res) => {
