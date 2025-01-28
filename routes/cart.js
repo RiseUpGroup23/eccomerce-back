@@ -222,18 +222,29 @@ router.delete('/:cartId/:productId', async (req, res) => {
     }
 });
 
-// Vaciar el carrito
+// Vaciar el carrito y restaurar el stock de los productos
 router.delete('/:cartId', async (req, res) => {
     try {
         const cart = await Cart.findById(req.params.cartId);
         if (!cart) return res.status(404).json({ error: 'Carrito no encontrado' });
 
-        cart.items = [];
-        const updatedCart = await cart.save();
-        res.json({ message: 'Carrito vaciado con éxito', cart: updatedCart });
+        // Restaurar el stock de los productos en el carrito
+        for (const item of cart.items) {
+            const product = await Producto.findById(item.product);
+            if (product) {
+                product.stock += item.quantity;  // Restaurar el stock
+                await product.save();
+            }
+        }
+
+        // Eliminar el carrito
+        await Cart.deleteOne({ _id: cart._id });
+
+        res.json({ message: 'Carrito eliminado y stock restaurado con éxito' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 module.exports = router;
