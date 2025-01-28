@@ -1,4 +1,6 @@
 const express = require('express');
+const moment = require('moment-timezone');
+
 const Product = require('../models/product/productModel');
 const Category = require('../models/category/categoryModel');
 const Order = require('../models/orders/orderModel');
@@ -225,37 +227,34 @@ router.get('/users', async (req, res) => {
 // Endpoint /stats para obtener las ventas y las órdenes de los últimos 14 días
 router.get('/orders/stats', async (req, res) => {
     try {
-        // Obtener la fecha de hace 14 días
-        const today = new Date();
-        const fourteenDaysAgo = new Date();
-        fourteenDaysAgo.setDate(today.getDate() - 14);
+        // Obtener la fecha actual en la zona horaria de Argentina
+        const today = moment().tz('America/Argentina/Buenos_Aires');
+        const fourteenDaysAgo = today.clone().subtract(14, 'days');
 
         // Filtrar las órdenes de los últimos 14 días
         const orders = await Order.find({
-            createdAt: { $gte: fourteenDaysAgo } // Órdenes creadas desde hace 14 días hasta hoy
+            createdAt: { $gte: fourteenDaysAgo.toDate() } // Convertir a objeto Date
         });
 
         // Función para obtener solo el número del día en hora local
         const getDayNumberLocal = (date) => {
-            return date.getDate(); // Solo el número del día
+            return moment(date).tz('America/Argentina/Buenos_Aires').date(); // Número del día (1-31)
         };
 
         // Inicializar las estructuras para almacenar las órdenes por día
         const last14Days = Array.from({ length: 14 }, (_, i) => {
-            const day = new Date();
-            day.setDate(today.getDate() - i); // Ajustamos la fecha hacia atrás
-            return getDayNumberLocal(day); // Usamos la función getDayNumberLocal para obtener solo el número del día
-        }).reverse(); // Revertimos el array para que los días más recientes estén al final
+            const day = today.clone().subtract(i, 'days');
+            return getDayNumberLocal(day); // Solo el número del día
+        }).reverse();
 
         const salesData = {
             xAxis: last14Days,
-            yAxisOrders: new Array(14).fill(0)   // Inicia con 0 órdenes por día
+            yAxisOrders: new Array(14).fill(0) // Inicia con 0 órdenes por día
         };
 
         // Recorremos las órdenes y las asignamos al día correspondiente
         orders.forEach(order => {
-            const orderDate = new Date(order.createdAt); // Convertir a fecha
-            const orderDayNumber = getDayNumberLocal(orderDate); // Obtener solo el número del día en hora local
+            const orderDayNumber = getDayNumberLocal(order.createdAt); // Número del día de la orden
             const dayIndex = salesData.xAxis.indexOf(orderDayNumber);
             if (dayIndex !== -1) {
                 salesData.yAxisOrders[dayIndex] += 1; // Incrementamos la cantidad de órdenes
@@ -264,11 +263,10 @@ router.get('/orders/stats', async (req, res) => {
 
         // Responder con las estadísticas estructuradas
         res.status(200).json({
-            xAxis: salesData.xAxis,
+            xAxis: salesData.xAxis, // Solo números del día (ej: [15, 16, 17, ...])
             yAxisOrders: salesData.yAxisOrders
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Error al obtener las estadísticas de órdenes' });
     }
 });
