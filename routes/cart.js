@@ -5,6 +5,37 @@ const crypto = require('crypto');
 
 const router = express.Router();
 
+// Endpoint para obtener el minicart: recibo los id me devuelve todos los datos de los productos
+router.post("/get-minicart", async (req, res) => {
+    const { cart } = req.body;
+
+    try {
+        // Extraemos solo los IDs de los productos del carrito
+        const productIds = cart.map(item => item._id);
+
+        // Realizamos la búsqueda de todos los productos que coinciden con los IDs
+        const products = await Producto.find({
+            _id: { $in: productIds }
+        })  // Traemos _id, stock, name y price de los productos
+
+        // Para devolver un array con los productos y su cantidad (de acuerdo al carrito)
+        const result = cart.map(item => {
+            const product = products.find(p => p._id.toString() === item._id);
+            return {
+                ...product.toObject(), // Convirtiendo el objeto de mongoose a JSON
+                quantity: item.quantity  // Añadimos la cantidad del producto en el carrito
+            };
+        });
+
+        // Respondemos con los productos encontrados y sus cantidades
+        res.json(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener los productos" });
+    }
+});
+
+
 // Limite de 10 minutos para los carritos
 const CART_EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutos en milisegundos
 
