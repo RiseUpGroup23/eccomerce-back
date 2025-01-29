@@ -3,6 +3,7 @@ const router = express.Router();
 const Order = require('../models/orders/orderModel');
 const Product = require('../models/product/productModel');
 const User = require('../models/user/userModel');
+const Cart = require('../models/cart/cartModel');
 
 router.post('/create', async (req, res) => {
     try {
@@ -37,6 +38,9 @@ router.post('/create', async (req, res) => {
                 });
             }
         }
+
+        // Eliminar el carrito relacionado
+        await Cart.deleteOne({ _id: req.body.cartId });
 
         // Guardar la nueva orden
         await newOrder.save();

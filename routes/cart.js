@@ -137,7 +137,6 @@ router.post('/reserve-cart', async (req, res) => {
 
         for (const item of cartItems) {
             const product = products.find(p => p._id.toString() === item.product);
-            console.log(product)
 
             if (product && product.stock >= item.quantity) {
                 // Reducir el stock de los productos reservados
