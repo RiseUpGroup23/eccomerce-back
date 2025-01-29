@@ -1,5 +1,4 @@
-
-
+const moment = require('moment-timezone');
 const Cart = require('../../models/cart/cartModel');
 const Producto = require('../../models/product/productModel');
 
@@ -8,8 +7,12 @@ const CART_EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutos en milisegundos
 
 // Función para eliminar carritos vencidos y restaurar el stock
 const clearExpiredCarts = async () => {
+    // Obtener la fecha actual en la zona horaria de Argentina
+    const currentDate = moment.tz('America/Argentina/Buenos_Aires').toDate();
+    
+    // Buscar carritos que han expirado según la zona horaria de Argentina
     const expiredCarts = await Cart.find({
-        updatedAt: { $lt: new Date(Date.now() - CART_EXPIRATION_TIME) }
+        updatedAt: { $lt: new Date(currentDate.getTime() - CART_EXPIRATION_TIME) }
     });
 
     for (const cart of expiredCarts) {
@@ -27,4 +30,4 @@ const clearExpiredCarts = async () => {
     }
 };
 
-module.exports = clearExpiredCarts
+module.exports = clearExpiredCarts;
