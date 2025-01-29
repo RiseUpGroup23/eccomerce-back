@@ -22,26 +22,6 @@ router.post('/create', async (req, res) => {
             user: user._id // Asignar el ID del usuario encontrado o creado
         });
 
-        const cart = req.body.cartId && await Cart.findOne({ _id: req.body.cartId });
-
-        // Iterar sobre los productos de la orden y restar el stock
-        for (let productItem of req.body.products) {
-            // Buscar el producto por su ID
-            let product = await Product.findById(productItem.product);
-            const alreadyInCart = cart && cart.items.find(elem => elem.product.toString() === item.product.toString());
-
-            // Si el producto existe y tiene suficiente stock, restar la cantidad
-            if (product && product.stock >= productItem.quantity) {
-                product.stock = (alreadyInCart.quantity + product.stock) - productItem.quantity;
-                await product.save(); // Guardar el producto con el nuevo stock
-            } else {
-                // Si no hay suficiente stock, devolver un error
-                return res.status(400).json({
-                    message: `No hay suficiente stock para el producto ${product.name}`
-                });
-            }
-        }
-
         // Eliminar el carrito relacionado
         await Cart.deleteOne({ _id: req.body.cartId });
 
