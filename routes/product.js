@@ -131,17 +131,33 @@ router.put('/:id', async (req, res) => {
             req.body.subcategory = null;
         }
 
-        const productoActualizado = await Product.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        );
+        // Buscar el producto por su ID
+        const producto = await Product.findById(req.params.id);
 
-        if (!productoActualizado) {
+        // Si no se encuentra el producto, devolver un error 404
+        if (!producto) {
             return res.status(404).json({ error: 'Producto no encontrado' });
         }
 
-        res.json(productoActualizado);
+        // Si se ha proporcionado una cantidad de stock en el req.body, actualizamos el stock sumando
+        if (req.body.stock !== undefined) {
+            // Actualizar el stock sumando la cantidad del req.body.stock
+            producto.stock += req.body.stock;
+        }
+
+        // Actualizar cualquier otro campo del producto con los datos proporcionados en req.body
+        // Usamos set para actualizar solo los campos que llegan en el body
+        Object.keys(req.body).forEach((key) => {
+            if (key !== 'stock') { // No actualizamos el stock directamente desde el body
+                producto[key] = req.body[key];
+            }
+        });
+
+        // Guardar el producto actualizado
+        await producto.save();
+
+        // Enviar el producto actualizado como respuesta
+        res.json(producto);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
