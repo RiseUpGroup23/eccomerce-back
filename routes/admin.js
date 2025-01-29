@@ -5,6 +5,7 @@ const Product = require('../models/product/productModel');
 const Category = require('../models/category/categoryModel');
 const Order = require('../models/orders/orderModel');
 const User = require('../models/user/userModel');
+const quantityInCarts = require('./modules/quantityInCarts');
 
 const router = express.Router();
 
@@ -76,9 +77,15 @@ router.get('/products', async (req, res) => {
         // Determinar si hay más páginas
         const nextPage = (page * itemsPerPage) < totalOfItems;
 
+        // Obtener el quantityInCart para cada producto
+        const productsWithQuantity = await Promise.all(productos.map(async (product) => {
+            const quantityInCart = await quantityInCarts(product._id); // Obtener la cantidad en carritos
+            return { ...product.toObject(), quantityInCart }; // Mapear el producto y agregar quantityInCart
+        }));
+
         // Enviar la respuesta con los productos, el total de elementos y si hay una siguiente página
         res.json({
-            products: productos,
+            products: productsWithQuantity,
             nextPage,
             totalOfItems
         });
@@ -86,7 +93,6 @@ router.get('/products', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 
 // Ruta para obtener categorías con paginación, filtros por nombre
 router.get('/categories', async (req, res) => {

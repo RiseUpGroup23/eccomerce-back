@@ -2,6 +2,7 @@ const express = require('express');
 const Product = require('../models/product/productModel');
 const Categoria = require('../models/category/categoryModel');
 const SubCategoria = require('../models/category/subCategoryModel');
+const quantityInCarts = require('./modules/quantityInCarts');
 
 const router = express.Router();
 
@@ -62,8 +63,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const producto = await Product.findById(req.params.id);
+        const quantityInCart = await quantityInCarts(producto._id)
         if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
-        res.json(producto);
+        res.json({ ...producto.toObject(), quantityInCart });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
