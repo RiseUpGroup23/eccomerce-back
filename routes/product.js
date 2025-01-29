@@ -2,7 +2,6 @@ const express = require('express');
 const Product = require('../models/product/productModel');
 const Categoria = require('../models/category/categoryModel');
 const SubCategoria = require('../models/category/subCategoryModel');
-const clearExpiredCarts = require("./modules/cleanExpiredCarts")
 
 const router = express.Router();
 
@@ -52,7 +51,6 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
-        await clearExpiredCarts();
         const productos = await Product.find();
         res.json(productos);
     } catch (err) {

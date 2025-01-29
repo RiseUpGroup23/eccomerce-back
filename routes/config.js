@@ -1,10 +1,12 @@
 var express = require('express');
 var router = express.Router();
 const { ConfigModel } = require("../models/config/configModel")
+const clearExpiredCarts = require("./modules/cleanExpiredCarts")
 
 /* GET of configuration */
 router.get('/', async function (req, res, next) {
   try {
+    await clearExpiredCarts()
     let existingConfig = await ConfigModel.findOne({})
 
     if (!existingConfig) {
