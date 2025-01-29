@@ -169,11 +169,19 @@ router.post('/reserve-cart', async (req, res) => {
 });
 
 
-// Obtener un carrito por ID
-router.get('/:cartId', async (req, res) => {
+// Validar un carrito por ID
+router.get('/check/:cartId', async (req, res) => {
     try {
         const cart = await Cart.findOne({ _id: req.params.cartId }).populate('items.productId', 'name price');
-        if (!cart) return res.status(404).json({ error: 'Carrito no encontrado' });
+
+        if (!cart) {
+            return res.status(404).json({ error: 'Carrito no encontrado' });
+        }
+
+        // Actualizar el campo updatedAt
+        cart.updatedAt = new Date();
+        await cart.save(); // Guardar los cambios en el carrito
+
         res.json(cart);
     } catch (err) {
         res.status(500).json({ error: err.message });
