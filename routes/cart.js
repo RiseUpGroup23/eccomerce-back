@@ -10,6 +10,7 @@ router.post("/get-minicart", async (req, res) => {
     const { cart } = req.body;
 
     try {
+        await clearExpiredCarts();
         // Extraemos solo los IDs de los productos del carrito
         const productIds = cart.map(item => item._id);
 
