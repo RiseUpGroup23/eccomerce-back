@@ -2,7 +2,7 @@ const express = require('express');
 const Cart = require('../models/cart/cartModel');
 const Producto = require('../models/product/productModel');
 const crypto = require('crypto');
-
+const clearExpiredCarts = require("./modules/cleanExpiredCarts")
 const router = express.Router();
 
 // Endpoint para obtener el minicart: recibo los id me devuelve todos los datos de los productos
@@ -10,7 +10,6 @@ router.post("/get-minicart", async (req, res) => {
     const { cart } = req.body;
 
     try {
-        await clearExpiredCarts();
         // Extraemos solo los IDs de los productos del carrito
         const productIds = cart.map(item => item._id);
 
@@ -35,31 +34,6 @@ router.post("/get-minicart", async (req, res) => {
         res.status(500).json({ message: "Error al obtener los productos" });
     }
 });
-
-
-// Limite de 10 minutos para los carritos
-const CART_EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutos en milisegundos
-
-// Función para eliminar carritos vencidos y restaurar el stock
-const clearExpiredCarts = async () => {
-    const expiredCarts = await Cart.find({
-        updatedAt: { $lt: new Date(Date.now() - CART_EXPIRATION_TIME) }
-    });
-
-    for (const cart of expiredCarts) {
-        // Restaurar el stock de los productos en los carritos vencidos
-        for (const item of cart.items) {
-            const product = await Producto.findById(item.product);
-            if (product) {
-                product.stock += item.quantity;
-                await product.save();
-            }
-        }
-
-        // Eliminar los carritos vencidos
-        await Cart.deleteOne({ _id: cart._id });
-    }
-};
 
 // Endpoint para simular el carrito (verificar disponibilidad sin reservar productos)
 router.post('/simulate-cart', async (req, res) => {
@@ -109,10 +83,7 @@ router.post('/reserve-cart', async (req, res) => {
     const { cartId, cartItems } = req.body;
 
     try {
-        // 1. Eliminar los carritos vencidos
-        await clearExpiredCarts();
-
-        // 2. Verificar si el carrito existe
+        // 1. Verificar si el carrito existe
         let cart = cartId && await Cart.findOne({ _id: cartId });
 
         // Si el carrito no existe, crear uno nuevo
@@ -123,17 +94,17 @@ router.post('/reserve-cart', async (req, res) => {
             await cart.save();
         }
 
-        // 3. Actualizar la fecha de modificación del carrito para renovar la expiración
+        // 2. Actualizar la fecha de modificación del carrito para renovar la expiración
         cart.updatedAt = new Date();
 
-        // 4. Obtener los productos necesarios con los campos que necesitamos
+        // 3. Obtener los productos necesarios con los campos que necesitamos
         const productIds = cartItems.map(item => item.product);
 
         // Usamos `.select()` para traer solo los campos que necesitamos: _id y stock
         const products = await Producto.find({ '_id': { $in: productIds } })
             .select('_id stock name'); // Traemos solo _id y stock
 
-        // 5. Reducir el stock de los productos que están disponibles
+        // 4. Reducir el stock de los productos que están disponibles
         let itemsUpdated = [];
 
         for (const item of cartItems) {
@@ -154,14 +125,14 @@ router.post('/reserve-cart', async (req, res) => {
             }
         }
 
-        // 6. Reemplazar los items actuales con los nuevos productos
+        // 5. Reemplazar los items actuales con los nuevos productos
         cart.items = itemsUpdated;
 
         // Guardar los cambios en el carrito
         await cart.save();
 
 
-        // 7. Confirmar la reserva sin devolver información del stock
+        // 6. Confirmar la reserva sin devolver información del stock
         res.json({ message: 'Productos reservados con éxito', cartId: cart._id });
     } catch (error) {
         console.error(error);
