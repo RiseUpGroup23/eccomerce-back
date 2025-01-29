@@ -172,7 +172,7 @@ router.post('/reserve-cart', async (req, res) => {
 // Validar un carrito por ID
 router.get('/check/:cartId', async (req, res) => {
     try {
-        const cart = await Cart.findOne({ _id: req.params.cartId }).populate('items.productId', 'name price');
+        const cart = await Cart.findOne({ _id: req.params.cartId })
 
         if (!cart) {
             return res.status(404).json({ error: 'Carrito no encontrado' });
