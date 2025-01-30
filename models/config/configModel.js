@@ -9,6 +9,11 @@ const ConfigSchema = new Schema({
     type: Map,
     of: String
   },
+  customization: {
+    logo: {
+      type: String
+    }
+  }
 });
 
 const ConfigModel = mongoose.model("ConfigSchema", ConfigSchema);
