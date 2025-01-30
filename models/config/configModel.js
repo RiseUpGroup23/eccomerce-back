@@ -9,6 +9,9 @@ const ConfigSchema = new Schema({
     type: Map,
     of: String
   },
+  phone: {
+    type: String
+  },
   customization: {
     logo: {
       type: String
