@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const pickupSchema = new mongoose.Schema({
-    id: { type: String, required: true },  // ID para identificar la sucursal
     name: { type: String, required: true },  // Nombre de la sucursal
     availability: { type: String, required: false },  // Disponibilidad de la sucursal
     address: { type: String, required: true },  // Dirección de la sucursal
