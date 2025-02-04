@@ -8,8 +8,7 @@ const productoSchema = new mongoose.Schema({
     listPrice: { type: Number },
     variants: [{
         attributes: {
-            type: Map,
-            of: String
+            name: String
         },
         stockByPickup: [{
             pickup: {
