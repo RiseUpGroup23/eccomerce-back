@@ -20,19 +20,17 @@ router.post("/get-minicart", async (req, res) => {
 
     try {
         // Extraer los IDs de los productos del carrito
-        const productIds = cart.map(item => item.product);
+        const productIds = cart.map(item => item._id);
 
         // Buscar los productos con sus variantes
         const products = await Producto.find({ _id: { $in: productIds } });
 
         // Construir la respuesta con detalles de variantes y sucursales
         const result = cart.map(item => {
-            const product = products.find(p => p._id.toString() === item.product);
-            const variant = product.variants.id(item.variant); // Obtener la variante específica
-
+            const product = products.find(p => p._id.toString() === item._id);
             return {
                 ...product.toObject(),
-                variant: variant, // Incluir detalles de la variante
+                variant: item.variant, // Incluir detalles de la variante
                 pickup: item.pickup, // Incluir la sucursal seleccionada
                 quantity: item.quantity
             };
