@@ -3,6 +3,17 @@ const Cart = require('../models/cart/cartModel');
 const Producto = require('../models/product/productModel');
 const router = express.Router();
 
+router.get("/check/:cartId", async (req, res) => {
+    try {
+        const { cartId } = req.params
+        const cartDB = await Cart.findById(cartId);
+        return res.json(cartDB)
+    } catch (error) {
+        res.status(404).send("Carrito no encontrado")
+    }
+
+})
+
 // Endpoint para obtener el minicart
 router.post("/get-minicart", async (req, res) => {
     const { cart } = req.body;
