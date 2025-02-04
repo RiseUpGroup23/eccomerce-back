@@ -139,16 +139,31 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Producto no encontrado' });
         }
 
-        // Si se ha proporcionado una cantidad de stock en el req.body, actualizamos el stock sumando
-        if (req.body.stock !== undefined) {
-            // Actualizar el stock sumando la cantidad del req.body.stock
-            producto.stock += req.body.stock;
+        // Si se ha proporcionado una cantidad de stock en el req.body, actualizamos el stock de la variante y sucursal específica
+        if (req.body.stock !== undefined && req.body.variantId && req.body.pickup) {
+            // Buscar la variante específica
+            const variant = producto.variants.id(req.body.variantId);
+            if (!variant) {
+                return res.status(404).json({ error: 'Variante no encontrada' });
+            }
+
+            // Buscar el stock de la sucursal específica
+            const stockEntry = variant.stockByPickup.find(sp => sp.pickup.equals(req.body.pickup));
+            if (!stockEntry) {
+                // Si no existe un registro de stock para esta sucursal, crear uno nuevo
+                variant.stockByPickup.push({
+                    pickup: req.body.pickup,
+                    quantity: req.body.stock
+                });
+            } else {
+                // Si existe, sumar la cantidad proporcionada al stock actual
+                stockEntry.quantity += req.body.stock;
+            }
         }
 
         // Actualizar cualquier otro campo del producto con los datos proporcionados en req.body
-        // Usamos set para actualizar solo los campos que llegan en el body
         Object.keys(req.body).forEach((key) => {
-            if (key !== 'stock') { // No actualizamos el stock directamente desde el body
+            if (key !== 'stock' && key !== 'variantId' && key !== 'pickup') { // No actualizamos estos campos directamente desde el body
                 producto[key] = req.body[key];
             }
         });
@@ -162,7 +177,6 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 
 router.delete('/:id', async (req, res) => {
     try {

@@ -6,7 +6,23 @@ const productoSchema = new mongoose.Schema({
     link: { type: String, required: true },
     sellingPrice: { type: Number, required: true },
     listPrice: { type: Number },
-    stock: { type: Number, required: true },
+    variants: [{
+        attributes: {
+            type: Map,
+            of: String
+        },
+        stockByPickup: [{
+            pickup: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Pickup',
+                required: true
+            },
+            quantity: {
+                type: Number,
+                default: 0
+            }
+        }]
+    }],
     quantity: { type: Number, required: false },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true }, // Categoría principal
     subcategory: {
@@ -20,6 +36,12 @@ const productoSchema = new mongoose.Schema({
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
+});
+
+productoSchema.virtual('totalStock').get(function () {
+    return this.variants.reduce((acc, variant) => {
+        return acc + variant.stockByPickup.reduce((sum, sp) => sum + sp.quantity, 0);
+    }, 0);
 });
 
 module.exports = mongoose.model('Producto', productoSchema);
