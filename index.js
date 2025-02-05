@@ -7,7 +7,14 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+    origin: '*',  // Permitir solicitudes desde cualquier origen
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], // Permitir todos los métodos HTTP
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with', 'accept', 'origin', 'access-control-allow-origin'], // Permitir todos los encabezados comunes
+};
+
+app.use(cors(corsOptions));  // Aplicar el middleware CORS a todas las rutas
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
