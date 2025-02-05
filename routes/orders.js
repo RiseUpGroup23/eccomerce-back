@@ -77,6 +77,26 @@ router.put('/:orderId', async (req, res) => {
             return res.status(404).json({ message: 'Orden no encontrada' });
         }
 
+        if (body.orderStatus === "canceled") {
+            // Restaurar el stock de los productos
+            for (const item of order.products) {
+                const product = await Product.findById(item.product._id);
+
+                if (product) {
+                    // Buscar la variante y sucursal correspondiente
+                    const variant = product.variants.find(v => v._id === item.variant);
+                    if (variant) {
+                        const stockEntry = variant.stockByPickup.find(sp => sp.pickup === item.pickup);
+                        if (stockEntry) {
+                            // Restaurar el stock
+                            stockEntry.quantity += item.quantity;
+                            await product.save();
+                        }
+                    }
+                }
+            }
+        }
+
         // Usamos $set para actualizar directamente los campos en la base de datos
         await Order.updateOne({ orderId }, {
             $set: {
@@ -104,24 +124,6 @@ router.delete('/:id', async (req, res) => {
 
         if (!order) {
             return res.status(404).json({ message: 'Orden no encontrada' });
-        }
-
-        // Restaurar el stock de los productos
-        for (const item of order.products) {
-            const product = await Product.findById(item.product._id);
-
-            if (product) {
-                // Buscar la variante y sucursal correspondiente
-                const variant = product.variants.find(v => v._id === item.variant);
-                if (variant) {
-                    const stockEntry = variant.stockByPickup.find(sp => sp.pickup === item.pickup);
-                    if (stockEntry) {
-                        // Restaurar el stock
-                        stockEntry.quantity += item.quantity;
-                        await product.save();
-                    }
-                }
-            }
         }
 
         // Eliminar la orden
