@@ -1,16 +1,35 @@
 const express = require('express');
-const cloudinary = require('cloudinary').v2;  // Asegúrate de importar Cloudinary
-const multer = require('multer');  // Asegúrate de importar multer
-const upload = multer({ storage: multer.memoryStorage() });  // Configuración de multer para almacenamiento en memoria
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const sharp = require('sharp'); 
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
-// Configurar Cloudinary solo una vez
+// Configuración de Cloudinary
 cloudinary.config({
     cloud_name: "dwqcfuief",
     api_key: "381134874894872",
     api_secret: "XfgRi_QxAhGa01VnckWH7AAx9rE",
 });
+
+// Función para redimensionar y comprimir las imágenes
+const processImage = async (buffer) => {
+    try {
+        // Redimensionar y comprimir la imagen para que no supere 1MB y tenga un tamaño adecuado
+        const processedImage = await sharp(buffer)
+            .resize(600, 600, {  // Redimensiona a 600x600px (puedes ajustar estos valores)
+                fit: sharp.fit.inside,
+                withoutEnlargement: true  // No redimensionar si la imagen es más pequeña
+            })
+            .webp({ quality: 80 })  // Comprimir la imagen (calidad 80, puedes ajustar el valor)
+            .toBuffer();  // Convertir a buffer para poder subirla
+
+        return processedImage;
+    } catch (error) {
+        throw new Error('Error al procesar la imagen: ' + error.message);
+    }
+};
 
 // Endpoint para cargar varias imágenes
 router.post('/', upload.array('photos', 6), async (req, res) => {
@@ -22,14 +41,18 @@ router.post('/', upload.array('photos', 6), async (req, res) => {
         // Cargar las imágenes a Cloudinary
         const uploadPromises = req.files.map((file) =>
             new Promise((resolve, reject) => {
-                const uploadStream = cloudinary.uploader.upload_stream(
-                    { resource_type: 'image' },
-                    (error, result) => {
-                        if (error) reject(error);
-                        else resolve(result);
-                    }
-                );
-                uploadStream.end(file.buffer);
+                processImage(file.buffer)  // Procesar la imagen antes de cargarla
+                    .then((processedBuffer) => {
+                        const uploadStream = cloudinary.uploader.upload_stream(
+                            { resource_type: 'image' },
+                            (error, result) => {
+                                if (error) reject(error);
+                                else resolve(result);
+                            }
+                        );
+                        uploadStream.end(processedBuffer);  // Subir la imagen procesada
+                    })
+                    .catch(reject);  // Si hay error, lo rechazamos
             })
         );
 
