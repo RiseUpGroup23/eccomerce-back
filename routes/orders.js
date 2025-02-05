@@ -80,16 +80,16 @@ router.put('/:orderId', async (req, res) => {
         if (body.orderStatus === "canceled") {
             // Restaurar el stock de los productos
             for (const item of order.products) {
-                const product = await Product.findById(item.product);
+                const product = await Product.findById(item.product).populate();
 
                 if (product) {
                     // Buscar la variante y sucursal correspondiente
-                    console.log(order.products.find(e => e.product === item.product))
-                    const variant = product.variants.find(v => v._id === order.products.find(e => e.product === item.product).variant);
+                    const variant = product.variants.find(v => v.id === item.variant);
                     if (variant) {
-                        const stockEntry = variant.stockByPickup.find(sp => sp.pickup === order.products.find(e => e.product === item.product).seller);
+                        const stockEntry = variant.stockByPickup.find(sp => sp.pickup.toString() === item.seller);
                         if (stockEntry) {
                             // Restaurar el stock
+                            console.log("restauro")
                             stockEntry.quantity += item.quantity;
                             await product.save();
                         }
