@@ -22,6 +22,9 @@ const orderSchema = new mongoose.Schema({
         },
         variant: {
             type: String,
+        },
+        seller: {
+            type: String,
         }
     }],
     totalAmount: {

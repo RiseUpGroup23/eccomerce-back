@@ -80,13 +80,14 @@ router.put('/:orderId', async (req, res) => {
         if (body.orderStatus === "canceled") {
             // Restaurar el stock de los productos
             for (const item of order.products) {
-                const product = await Product.findById(item.product._id);
+                const product = await Product.findById(item.product);
 
                 if (product) {
                     // Buscar la variante y sucursal correspondiente
-                    const variant = product.variants.find(v => v._id === item.variant);
+                    console.log(order.products.find(e => e.product === item.product))
+                    const variant = product.variants.find(v => v._id === order.products.find(e => e.product === item.product).variant);
                     if (variant) {
-                        const stockEntry = variant.stockByPickup.find(sp => sp.pickup === item.pickup);
+                        const stockEntry = variant.stockByPickup.find(sp => sp.pickup === order.products.find(e => e.product === item.product).seller);
                         if (stockEntry) {
                             // Restaurar el stock
                             stockEntry.quantity += item.quantity;
@@ -98,7 +99,7 @@ router.put('/:orderId', async (req, res) => {
         }
 
         // Usamos $set para actualizar directamente los campos en la base de datos
-        await Order.updateOne({ orderId }, {
+        false && await Order.updateOne({ orderId }, {
             $set: {
                 ...body,  // Usamos todo el cuerpo para actualizar los campos
                 updatedAt: Date.now()  // Aseguramos que la fecha de actualización sea correcta
