@@ -94,22 +94,43 @@ router.put('/:orderId', async (req, res) => {
     }
 });
 
-// Eliminar una orden por ID
+// Eliminar una orden por ID y restaurar el stock de los productos
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
-        const order = await Order.findById(id);
+        // Buscar la orden por ID
+        const order = await Order.findById(id).populate('products.product');
 
         if (!order) {
             return res.status(404).json({ message: 'Orden no encontrada' });
         }
 
+        // Restaurar el stock de los productos
+        for (const item of order.products) {
+            const product = await Product.findById(item.product._id);
+
+            if (product) {
+                // Buscar la variante y sucursal correspondiente
+                const variant = product.variants.find(v => v._id === item.variant);
+                if (variant) {
+                    const stockEntry = variant.stockByPickup.find(sp => sp.pickup === item.pickup);
+                    if (stockEntry) {
+                        // Restaurar el stock
+                        stockEntry.quantity += item.quantity;
+                        await product.save();
+                    }
+                }
+            }
+        }
+
+        // Eliminar la orden
         await order.remove();
-        res.status(200).json({ message: 'Orden eliminada exitosamente' });
+
+        res.status(200).json({ message: 'Orden eliminada y stock restaurado exitosamente' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error al eliminar la orden' });
+        res.status(500).json({ message: 'Error al eliminar la orden y restaurar el stock' });
     }
 });
 
