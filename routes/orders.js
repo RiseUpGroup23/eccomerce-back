@@ -99,7 +99,7 @@ router.put('/:orderId', async (req, res) => {
         }
 
         // Usamos $set para actualizar directamente los campos en la base de datos
-        false && await Order.updateOne({ orderId }, {
+        await Order.updateOne({ orderId }, {
             $set: {
                 ...body,  // Usamos todo el cuerpo para actualizar los campos
                 updatedAt: Date.now()  // Aseguramos que la fecha de actualización sea correcta
