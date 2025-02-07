@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get a user by ID (GET)
-router.get('/:id', async (req, res) => {
+router.get('/get/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -44,7 +44,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a user (PUT)
-router.put('/:id', async (req, res) => {
+router.put('/edit/:id', async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
@@ -64,7 +64,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a user (DELETE)
-router.delete('/:id', async (req, res) => {
+router.delete('/delete/:id', async (req, res) => {
     try {
         const deletedUser = await User.findByIdAndDelete(req.params.id);
         if (!deletedUser) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -136,6 +136,7 @@ const verifyToken = (req, res, next) => {
         next();
     });
 };
+
 
 router.get('/jwt', verifyToken, (req, res) => {
     res.json({ logged: true });
