@@ -23,7 +23,7 @@ const productoSchema = new mongoose.Schema({
         }]
     }],
     quantity: { type: Number, required: false },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true }, // Categoría principal
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria'}, // Categoría principal
     subcategory: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Subcategoria',

@@ -1,4 +1,5 @@
 const express = require('express');
+const OpenAI = require('openai');
 const Transport = require('../models/transport/transportModel');
 
 const router = express.Router();
