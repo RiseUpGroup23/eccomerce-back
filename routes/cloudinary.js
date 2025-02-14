@@ -18,11 +18,11 @@ const processImage = async (buffer) => {
     try {
         // Redimensionar y comprimir la imagen para que no supere 1MB y tenga un tamaño adecuado
         const processedImage = await sharp(buffer)
-            .resize(600, 600, {  // Redimensiona a 600x600px (puedes ajustar estos valores)
+            .resize(1300, 600, {  // Redimensiona a 600x600px (puedes ajustar estos valores)
                 fit: sharp.fit.inside,
                 withoutEnlargement: true  // No redimensionar si la imagen es más pequeña
             })
-            .webp({ quality: 80 })  // Comprimir la imagen (calidad 80, puedes ajustar el valor)
+            .webp({ quality: 85 })  // Comprimir la imagen (calidad 80, puedes ajustar el valor)
             .toBuffer();  // Convertir a buffer para poder subirla
 
         return processedImage;
