@@ -1,47 +1,94 @@
 const express = require('express');
 const Product = require('../models/product/productModel');
+const Categoria = require('../models/category/categoryModel');
+const SubCategoria = require('../models/category/subCategoryModel');
+const Collection = require('../models/collection/collectionModel');
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-    const { name } = req.query;  // Obtenemos el parámetro 'name' de la consulta
+    const { name, category, subCategory, collection, page } = req.query;
+
     try {
-        let products = [];
+        const pageNumber = parseInt(page) || 1;
+        const limit = 20;
+        const skip = (pageNumber - 1) * limit;
 
-        // Si 'name' está presente en la query, buscamos primero por 'name'
+        const filterConditions = {};
+
         if (name) {
-            const nameQuery = { name: { $regex: name, $options: 'i' } };
-            products = await Product.find(nameQuery);
-
-            // Si no encontramos productos por nombre, intentamos con 'brand'
-            if (products.length === 0) {
-                const brandQuery = { brand: { $regex: name, $options: 'i' } };
-                products = await Product.find(brandQuery);
-            }
-
-            // Si aún no encontramos productos, intentamos por 'category' o 'subcategory'
-            if (products.length === 0) {
-                const categoryQuery = {
-                    $or: [
-                        { category: { $regex: name, $options: 'i' } },
-                        { subcategory: { $regex: name, $options: 'i' } }
-                    ]
-                };
-                products = await Product.find(categoryQuery);
-            }
-        } else {
-            // Si no se pasa 'name', retornamos todos los productos
-            products = await Product.find();
+            filterConditions.$or = [
+                { name: { $regex: new RegExp(name, 'i') } },
+                { brand: { $regex: new RegExp(name, 'i') } }
+            ];
         }
 
-        // Enviamos la respuesta
-        if (products.length > 0) {
-            res.json(products);  // Si encontramos productos, los devolvemos
-        } else {
-            res.status(404).json({ message: 'No se encontraron productos.' });  // Si no encontramos nada, devolvemos un error 404
+        if (category) {
+            const categoriaEncontrada = await Categoria.findOne({
+                $or: [{ _id: category }, { categoryLink: category }],
+            });
+            if (categoriaEncontrada) {
+                filterConditions.category = categoriaEncontrada._id;
+            }
         }
+
+        if (subCategory) {
+            const subCategoriaEncontrada = await SubCategoria.findOne({
+                $or: [{ _id: subCategory }, { subCategoryLink: subCategory }],
+            });
+            if (subCategoriaEncontrada) {
+                filterConditions.subcategory = subCategoriaEncontrada._id;
+            }
+        }
+
+        if (collection) {
+            const coleccion = await Collection.findById(collection).populate('products');
+            if (coleccion) {
+                const productIds = coleccion.products.map((p) => p._id);
+                filterConditions._id = { $in: productIds };
+            }
+        }
+
+        const products = await Product.find(filterConditions)
+            .populate('category')
+            .populate('subcategory')
+            .skip(skip)
+            .limit(limit);
+
+        const totalOfItems = await Product.countDocuments(filterConditions);
+        const nextPage = pageNumber * limit < totalOfItems;
+
+        const categoriesSet = new Set();
+        const prices = [];
+
+        products.forEach((product) => {
+            if (product.category) categoriesSet.add(product.category);
+            if (product.sellingPrice) prices.push(product.sellingPrice);
+        });
+
+        const categoriesArray = Array.from(categoriesSet).map((c) => ({
+            _id: c._id,
+            name: c.name,
+            subcategories: c.subcategories,
+        }));
+
+        const priceRange = prices.length > 0
+            ? [Math.min(...prices), Math.max(...prices)]
+            : [0, 0];
+
+        res.json({
+            products,
+            filters: [{
+                categories: categoriesArray,
+                priceRange,
+            }],
+            pagination: {
+                nextPage,
+                totalOfItems,
+            },
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });  // En caso de error, respondemos con el error
+        res.status(500).json({ error: err.message });
     }
 });
 
