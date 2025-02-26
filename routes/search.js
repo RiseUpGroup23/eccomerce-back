@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Product = require('../models/product/productModel');
 const Categoria = require('../models/category/categoryModel');
 const SubCategoria = require('../models/category/subCategoryModel');
@@ -24,18 +25,28 @@ router.get('/', async (req, res) => {
         }
 
         if (category) {
-            const categoriaEncontrada = await Categoria.findOne({
-                $or: [{ _id: category }, { categoryLink: category }],
-            });
+            let query = {};
+            // Si category es un ObjectId válido, buscar por _id, de lo contrario por categoryLink
+            if (mongoose.Types.ObjectId.isValid(category)) {
+                query = { _id: category };
+            } else {
+                query = { categoryLink: category };
+            }
+            const categoriaEncontrada = await Categoria.findOne(query);
             if (categoriaEncontrada) {
                 filterConditions.category = categoriaEncontrada._id;
             }
         }
 
         if (subCategory) {
-            const subCategoriaEncontrada = await SubCategoria.findOne({
-                $or: [{ _id: subCategory }, { subCategoryLink: subCategory }],
-            });
+            let query = {};
+            // Si subCategory es un ObjectId válido, buscar por _id, de lo contrario por subCategoryLink
+            if (mongoose.Types.ObjectId.isValid(subCategory)) {
+                query = { _id: subCategory };
+            } else {
+                query = { subCategoryLink: subCategory };
+            }
+            const subCategoriaEncontrada = await SubCategoria.findOne(query);
             if (subCategoriaEncontrada) {
                 filterConditions.subcategory = subCategoriaEncontrada._id;
             }

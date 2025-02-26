@@ -18,7 +18,7 @@ const processImage = async (buffer) => {
     try {
         // Redimensionar y comprimir la imagen para que no supere 1MB y tenga un tamaño adecuado
         const processedImage = await sharp(buffer)
-            .resize(1300, 600, {  // Redimensiona a 600x600px (puedes ajustar estos valores)
+            .resize(1300, 600, { 
                 fit: sharp.fit.inside,
                 withoutEnlargement: true  // No redimensionar si la imagen es más pequeña
             })
