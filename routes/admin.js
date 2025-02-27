@@ -244,7 +244,7 @@ router.get('/collections', async (req, res) => {
 
         // Filtro por nombre de categoría
         if (q) {
-            filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
+            filterConditions.title = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
         }
 
         // Consultar las colecciones con los filtros y paginación
