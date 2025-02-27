@@ -8,7 +8,7 @@ const Collection = require('../models/collection/collectionModel');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-    const { name, category, subCategory, collection, page } = req.query;
+    const { name, category, subCategory, collection, page, range } = req.query;
 
     try {
         const pageNumber = parseInt(page) || 1;
@@ -16,17 +16,18 @@ router.get('/', async (req, res) => {
         const skip = (pageNumber - 1) * limit;
 
         const filterConditions = {};
+        let searchTitle = "";
 
         if (name) {
             filterConditions.$or = [
                 { name: { $regex: new RegExp(name, 'i') } },
                 { brand: { $regex: new RegExp(name, 'i') } }
             ];
+            searchTitle = `Resultados para: ${name}`;
         }
 
         if (category) {
             let query = {};
-            // Si category es un ObjectId válido, buscar por _id, de lo contrario por categoryLink
             if (mongoose.Types.ObjectId.isValid(category)) {
                 query = { _id: category };
             } else {
@@ -35,20 +36,21 @@ router.get('/', async (req, res) => {
             const categoriaEncontrada = await Categoria.findOne(query);
             if (categoriaEncontrada) {
                 filterConditions.category = categoriaEncontrada._id;
+                searchTitle = categoriaEncontrada.name;
             }
         }
 
         if (subCategory) {
             let query = {};
-            // Si subCategory es un ObjectId válido, buscar por _id, de lo contrario por subCategoryLink
             if (mongoose.Types.ObjectId.isValid(subCategory)) {
                 query = { _id: subCategory };
             } else {
-                query = { subCategoryLink: subCategory };
+                query = { name: subCategory };
             }
             const subCategoriaEncontrada = await SubCategoria.findOne(query);
             if (subCategoriaEncontrada) {
                 filterConditions.subcategory = subCategoriaEncontrada._id;
+                searchTitle = subCategoriaEncontrada.name;
             }
         }
 
@@ -57,6 +59,13 @@ router.get('/', async (req, res) => {
             if (coleccion) {
                 const productIds = coleccion.products.map((p) => p._id);
                 filterConditions._id = { $in: productIds };
+            }
+        }
+
+        if (range) {
+            const [minPrice, maxPrice] = range.split('a').map(Number);
+            if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+                filterConditions.sellingPrice = { $gte: minPrice, $lte: maxPrice };
             }
         }
 
@@ -97,6 +106,7 @@ router.get('/', async (req, res) => {
                 nextPage,
                 totalOfItems,
             },
+            searchTitle,
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
