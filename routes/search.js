@@ -89,10 +89,10 @@ router.get('/', async (req, res) => {
 
         res.json({
             products,
-            filters: [{
+            filters: {
                 categories: categoriesArray,
                 priceRange,
-            }],
+            },
             pagination: {
                 nextPage,
                 totalOfItems,
