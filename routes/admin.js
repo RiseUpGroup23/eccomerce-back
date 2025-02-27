@@ -4,6 +4,7 @@ const moment = require('moment-timezone');
 const Product = require('../models/product/productModel');
 const Category = require('../models/category/categoryModel');
 const Order = require('../models/orders/orderModel');
+const Collection = require('../models/collection/collectionModel');
 const User = require('../models/user/userModel');
 const quantityInCarts = require('./modules/quantityInCarts');
 
@@ -221,6 +222,45 @@ router.get('/users', async (req, res) => {
         // Enviar la respuesta con los usuarios, el total de elementos y si hay una siguiente página
         res.json({
             users,
+            nextPage,
+            totalOfItems
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Ruta para obtener colecciones con paginación, filtros por nombre
+router.get('/collections', async (req, res) => {
+    try {
+        const { page = 1, itemsPerPage = 10, q } = req.query;
+
+        // Calcular la cantidad de saltos (skip) y el límite (limit) de las colecciones
+        const skip = (page - 1) * itemsPerPage;
+        const limit = parseInt(itemsPerPage, 10);
+
+        // Filtro de nombre (q) si se pasa en la consulta
+        const filterConditions = {};
+
+        // Filtro por nombre de categoría
+        if (q) {
+            filterConditions.name = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
+        }
+
+        // Consultar las colecciones con los filtros y paginación
+        const collections = await Collection.find(filterConditions)
+            .skip(skip)
+            .limit(limit);
+
+        // Contar el total de colecciones para calcular el total de páginas
+        const totalOfItems = await Collection.countDocuments(filterConditions);
+
+        // Determinar si hay más páginas
+        const nextPage = (page * itemsPerPage) < totalOfItems;
+
+        // Enviar la respuesta con las colecciones, el total de elementos y si hay una siguiente página
+        res.json({
+            collections,
             nextPage,
             totalOfItems
         });
