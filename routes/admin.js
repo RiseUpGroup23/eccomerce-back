@@ -271,7 +271,7 @@ router.get('/collections', async (req, res) => {
 
 
 // Endpoint /stats para obtener las ventas y las órdenes de los últimos 14 días
-router.get('/orders/stats', async (req, res) => {
+router.get('/stats/orders', async (req, res) => {
     try {
         // Obtener la fecha actual en la zona horaria de Argentina
         const today = moment().tz('America/Argentina/Buenos_Aires');
@@ -314,6 +314,38 @@ router.get('/orders/stats', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Error al obtener las estadísticas de órdenes' });
+    }
+});
+
+// Endpoint /stats/mostSold para obtener los productos más vendidos sin incluir aquellos con 0 ventas
+router.get('/stats/mostSold', async (req, res) => {
+    try {
+        // Agregamos un campo 'totalSold' que es la suma de totalSold en cada variante
+        const mostSoldProducts = await Product.aggregate([
+            {
+                $addFields: {
+                    totalSold: {
+                        $sum: {
+                            $map: {
+                                input: "$variants",
+                                as: "variant",
+                                in: { $sum: "$$variant.stockByPickup.totalSold" }
+                            }
+                        }
+                    }
+                }
+            },
+            // Filtrar los productos que tienen totalSold mayor a 0
+            { $match: { totalSold: { $gt: 0 } } },
+            // Ordenar de mayor a menor según totalSold
+            { $sort: { totalSold: -1 } },
+            // Limitar a los 10 productos más vendidos
+            { $limit: 10 }
+        ]);
+
+        res.status(200).json({ products: mostSoldProducts });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
