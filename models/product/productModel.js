@@ -19,6 +19,10 @@ const productoSchema = new mongoose.Schema({
             quantity: {
                 type: Number,
                 default: 0
+            },
+            totalSold: {
+                type: Number,
+                default: 0
             }
         }]
     }],

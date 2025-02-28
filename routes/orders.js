@@ -89,7 +89,7 @@ router.put('/:orderId', async (req, res) => {
                         const stockEntry = variant.stockByPickup.find(sp => sp.pickup.toString() === item.seller);
                         if (stockEntry) {
                             // Restaurar el stock
-                            console.log("restauro")
+                            stockEntry.totalSold -= item.quantity;
                             stockEntry.quantity += item.quantity;
                             await product.save();
                         }

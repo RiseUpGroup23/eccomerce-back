@@ -28,6 +28,7 @@ const clearExpiredCarts = async () => {
                     if (stockEntry) {
                         // Restaurar el stock
                         stockEntry.quantity += item.quantity;
+                        stockEntry.totalSold -= item.quantity;
                         await product.save();
                     }
                 }

@@ -116,6 +116,7 @@ router.post('/reserve-cart', async (req, res) => {
 
             // Reducir el stock
             stockEntry.quantity -= item.quantity;
+            stockEntry.totalSold += item.quantity;
             await product.save();
         }
 
@@ -144,6 +145,7 @@ router.delete('/:cartId', async (req, res) => {
 
             if (stockEntry) {
                 stockEntry.quantity += item.quantity; // Restaurar el stock
+                stockEntry.totalSold -= item.quantity;
                 await product.save();
             }
         }
