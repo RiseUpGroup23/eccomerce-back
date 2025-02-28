@@ -8,7 +8,7 @@ const Collection = require('../models/collection/collectionModel');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-    const { name, category, subCategory, collection, page } = req.query;
+    const { name, category, subCategory, collection, page, range } = req.query;
 
     try {
         const pageNumber = parseInt(page) || 1;
@@ -16,39 +16,41 @@ router.get('/', async (req, res) => {
         const skip = (pageNumber - 1) * limit;
 
         const filterConditions = {};
+        let searchTitle = "";
 
         if (name) {
             filterConditions.$or = [
                 { name: { $regex: new RegExp(name, 'i') } },
                 { brand: { $regex: new RegExp(name, 'i') } }
             ];
+            searchTitle = `Resultados para: ${name}`;
         }
 
         if (category) {
             let query = {};
-            // Si category es un ObjectId válido, buscar por _id, de lo contrario por categoryLink
             if (mongoose.Types.ObjectId.isValid(category)) {
                 query = { _id: category };
             } else {
                 query = { categoryLink: category };
             }
-            const categoriaEncontrada = await Categoria.findOne(query);
+            const categoriaEncontrada = await Categoria.findOne(query).populate({ path: 'subcategories', model: SubCategoria });
             if (categoriaEncontrada) {
                 filterConditions.category = categoriaEncontrada._id;
+                searchTitle = categoriaEncontrada.name;
             }
         }
 
         if (subCategory) {
             let query = {};
-            // Si subCategory es un ObjectId válido, buscar por _id, de lo contrario por subCategoryLink
             if (mongoose.Types.ObjectId.isValid(subCategory)) {
                 query = { _id: subCategory };
             } else {
-                query = { subCategoryLink: subCategory };
+                query = { name: subCategory };
             }
             const subCategoriaEncontrada = await SubCategoria.findOne(query);
             if (subCategoriaEncontrada) {
                 filterConditions.subcategory = subCategoriaEncontrada._id;
+                searchTitle = subCategoriaEncontrada.name;
             }
         }
 
@@ -60,8 +62,18 @@ router.get('/', async (req, res) => {
             }
         }
 
+        if (range) {
+            const [minPrice, maxPrice] = range.split('a').map(Number);
+            if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+                filterConditions.sellingPrice = { $gte: minPrice, $lte: maxPrice };
+            }
+        }
+
         const products = await Product.find(filterConditions)
-            .populate('category')
+            .populate({
+                path: 'category',
+                populate: { path: 'subcategories', model: SubCategoria }
+            })
             .populate('subcategory')
             .skip(skip)
             .limit(limit);
@@ -70,17 +82,34 @@ router.get('/', async (req, res) => {
         const nextPage = pageNumber * limit < totalOfItems;
 
         const categoriesSet = new Set();
+        const subcategoriesSet = new Set();
         const prices = [];
 
         products.forEach((product) => {
             if (product.category) categoriesSet.add(product.category);
+            if (product.subcategory) subcategoriesSet.add(product.subcategory);
             if (product.sellingPrice) prices.push(product.sellingPrice);
         });
 
-        const categoriesArray = Array.from(categoriesSet).map((c) => ({
+        const categoriesArray = await Categoria.find({ _id: { $in: Array.from(categoriesSet).map(cat => cat._id) } }).populate('subcategories');
+
+        const formattedCategories = categoriesArray.map(c => ({
             _id: c._id,
             name: c.name,
-            subcategories: c.subcategories,
+            categoryLink: c.categoryLink,
+            subcategories: c.subcategories.map(sub => ({
+                _id: sub._id,
+                name: sub.name,
+                categoryLink: sub.categoryLink
+            }))
+        }));
+
+        const subcategoriesArray = await SubCategoria.find({ _id: { $in: Array.from(subcategoriesSet).map(sub => sub._id) } });
+
+        const formattedSubcategories = subcategoriesArray.map(sub => ({
+            _id: sub._id,
+            name: sub.name,
+            categoryLink: sub.categoryLink,
         }));
 
         const priceRange = prices.length > 0
@@ -90,13 +119,15 @@ router.get('/', async (req, res) => {
         res.json({
             products,
             filters: {
-                categories: categoriesArray,
+                categories: formattedCategories,
+                subcategories: formattedSubcategories,
                 priceRange,
             },
             pagination: {
                 nextPage,
                 totalOfItems,
             },
+            searchTitle,
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
