@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
             if (mongoose.Types.ObjectId.isValid(subCategory)) {
                 query = { _id: subCategory };
             } else {
-                query = { name: subCategory };
+                query = { name: new RegExp(`^${subCategory}$`, 'i') };
             }
             const subCategoriaEncontrada = await SubCategoria.findOne(query);
             if (subCategoriaEncontrada) {
