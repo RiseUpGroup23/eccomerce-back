@@ -7,10 +7,10 @@ const router = express.Router();
 // Create an empty collection (POST)
 router.post('/', async (req, res) => {
     try {
-        const { title } = req.body;
+        const { title, products } = req.body;
 
         // Create a new empty collection
-        const newCollection = new Collection({ title, products: [] });
+        const newCollection = new Collection({ title, products });
         const savedCollection = await newCollection.save();
         res.status(201).json(savedCollection);
     } catch (err) {
