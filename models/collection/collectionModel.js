@@ -5,8 +5,7 @@ const collectionSchema = new mongoose.Schema(
     {
         collectionId: {
             type: Number,
-            unique: true,
-            required: true
+            unique: true
         },
         title: {
             type: String,
