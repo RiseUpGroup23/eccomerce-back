@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
         }
 
         if (collection) {
-            const coleccion = await Collection.findById(collection).populate('products');
+            const coleccion = await Collection.findOne({ collectionId: collection }).populate('products');
             if (coleccion) {
                 const productIds = coleccion.products.map((p) => p._id);
                 filterConditions._id = { $in: productIds };
