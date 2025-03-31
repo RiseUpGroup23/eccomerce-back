@@ -13,7 +13,8 @@ const DispositionItemSchema = new Schema({
 // Esquema para DispositionModel
 const DispositionSchema = new Schema({
     items: {
-        type: [DispositionItemSchema], default: [
+        type: [DispositionItemSchema],
+        default: () => ([
             {
                 title: "Demo banner",
                 type: "largeSlider",
@@ -24,8 +25,8 @@ const DispositionSchema = new Schema({
                     }
                 ]
             }
-        ]
-    }  // Array de DispositionItems con valor por defecto
+        ])
+    }
 }, { timestamps: true });
 
 // Modelo para DispositionModel

@@ -9,10 +9,10 @@ const ConfigSchema = new Schema({
     type: Map,
     of: String,
     default: {
-      secondaryTextColor: "#cbcbcb",
-      primaryColor: "#000000",
+      primaryColor: "#cbcbcb",
       primaryTextColor: "#000000",
-      secondaryColor: "#cbcbcb"
+      secondaryTextColor: "#cbcbcb",
+      secondaryColor: "#000000"
     }
   },
   phone: {
