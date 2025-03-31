@@ -12,7 +12,20 @@ const DispositionItemSchema = new Schema({
 
 // Esquema para DispositionModel
 const DispositionSchema = new Schema({
-    items: [DispositionItemSchema]  // Array de DispositionItems
+    items: {
+        type: [DispositionItemSchema], default: [
+            {
+                title: "Demo banner",
+                type: "largeSlider",
+                content: [
+                    {
+                        "desktop": "https://static.vecteezy.com/system/resources/previews/006/828/785/non_2x/paper-art-shopping-online-on-smartphone-and-new-buy-sale-promotion-pink-backgroud-for-banner-market-ecommerce-women-concept-free-vector.jpg",
+                        "mobile": "https://img.pikbest.com/backgrounds/20210618/creative-technology-smart-style-mobile-promotion-banner-template_6021593.jpg!bw700"
+                    }
+                ]
+            }
+        ]
+    }  // Array de DispositionItems con valor por defecto
 }, { timestamps: true });
 
 // Modelo para DispositionModel
