@@ -113,7 +113,7 @@ router.get('/', async (req, res) => {
         }));
 
         const priceRange = prices.length > 0
-            ? [Math.min(...prices) / 100, Math.max(...prices) / 100]
+            ? [Math.min(...prices), Math.max(...prices)]
             : [0, 0];
 
         res.json({
