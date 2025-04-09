@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
             if (coleccion) {
                 const productIds = coleccion.products.map((p) => p._id);
                 filterConditions._id = { $in: productIds };
-                searchTitle = coleccion.name; 
+                searchTitle = coleccion.title; 
             }
         }
 
