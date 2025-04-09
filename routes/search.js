@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
             if (coleccion) {
                 const productIds = coleccion.products.map((p) => p._id);
                 filterConditions._id = { $in: productIds };
-                searchTitle = coleccion.name;
+                searchTitle = coleccion.name; 
             }
         }
 
@@ -82,32 +82,30 @@ router.get('/', async (req, res) => {
         const totalOfItems = await Product.countDocuments(filterConditions);
         const nextPage = pageNumber * limit < totalOfItems;
 
-        const categoryIds = new Set();
-        const subcategoryIds = new Set();
+        const categoriesSet = new Set();
+        const subcategoriesSet = new Set();
         const prices = [];
 
         products.forEach((product) => {
-            if (product.category?._id) categoryIds.add(product.category._id.toString());
-            if (product.subcategory?._id) subcategoryIds.add(product.subcategory._id.toString());
+            if (product.category) categoriesSet.add(product.category);
+            if (product.subcategory) subcategoriesSet.add(product.subcategory);
             if (product.sellingPrice) prices.push(product.sellingPrice);
         });
 
-        const categoriesArray = await Categoria.find({ _id: { $in: Array.from(categoryIds) } }).populate('subcategories');
+        const categoriesArray = await Categoria.find({ _id: { $in: Array.from(categoriesSet).map(cat => cat._id) } }).populate('subcategories');
 
         const formattedCategories = categoriesArray.map(c => ({
             _id: c._id,
             name: c.name,
             categoryLink: c.categoryLink,
-            subcategories: c.subcategories
-                .filter(sub => subcategoryIds.has(sub._id.toString()))
-                .map(sub => ({
-                    _id: sub._id,
-                    name: sub.name,
-                    categoryLink: sub.categoryLink
-                }))
+            subcategories: c.subcategories.map(sub => ({
+                _id: sub._id,
+                name: sub.name,
+                categoryLink: sub.categoryLink
+            }))
         }));
 
-        const subcategoriesArray = await SubCategoria.find({ _id: { $in: Array.from(subcategoryIds) } });
+        const subcategoriesArray = await SubCategoria.find({ _id: { $in: Array.from(subcategoriesSet).map(sub => sub._id) } });
 
         const formattedSubcategories = subcategoriesArray.map(sub => ({
             _id: sub._id,
