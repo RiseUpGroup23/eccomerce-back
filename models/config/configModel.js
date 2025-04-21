@@ -22,6 +22,14 @@ const ConfigSchema = new Schema({
     logo: {
       type: String,
       default: "https://www.risingground.org/wp-content/uploads/2016/08/logo_placeholder.png"
+    },
+    menuTira: {
+      items: [{
+        linkTo: String,
+        title: String
+      }],
+      backgroundColor: String,
+      textColor: String
     }
   }
 });
