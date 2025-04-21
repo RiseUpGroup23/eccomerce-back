@@ -28,8 +28,14 @@ const ConfigSchema = new Schema({
         linkTo: String,
         title: String
       }],
-      backgroundColor: String,
-      textColor: String
+      backgroundColor: {
+        type: String,
+        default: "#000000"
+      },
+      textColor: {
+        type: String,
+        default: "#ffffff"
+      }
     }
   }
 });
