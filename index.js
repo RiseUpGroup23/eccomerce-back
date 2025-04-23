@@ -37,6 +37,7 @@ const adminRoutes = require('./routes/admin');
 const cloudinaryRoutes = require('./routes/cloudinary');
 const ordersRoutes = require('./routes/orders');
 const paymentsRoutes = require('./routes/payments');
+const mpRoutes = require('./routes/mp'); 
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);
@@ -52,7 +53,7 @@ app.use('/admin', adminRoutes);
 app.use('/cloudinary', cloudinaryRoutes);
 app.use('/orders', ordersRoutes);
 app.use('/payments', paymentsRoutes);
-
+app.use('/mp', mpRoutes); 
 
 
 app.get('/', (req, res) => {
