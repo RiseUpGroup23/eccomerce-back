@@ -3,7 +3,7 @@ const router = express.Router();
 const { MercadoPagoConfig, Payment } = require('mercadopago'); 
 
 const mp = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-8633523865276392-020907-91a34f6b10384b3ec555d52713c48e7b-168165628'
+  accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-2980739470681237-041511-f22e6b0194eb879f65be2875f14bc098-229156870'
 });
 
 const payment = new Payment(mp); 
