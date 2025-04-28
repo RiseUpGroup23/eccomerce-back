@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
                 },
                 {
                     id: "mercadoPago",
-                    name: "Mercado Pago",
+                    name: "Tarjeta de crédito / Débito",
                     active: true,
                     createdAt: new Date(),
                     updatedAt: new Date()
