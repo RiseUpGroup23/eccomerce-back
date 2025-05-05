@@ -8,17 +8,8 @@ const mp = new MercadoPagoConfig({
 
 const payment = new Payment(mp);
 router.post('/create-payment', async (req, res) => {
-  const { token, transaction_amount, installments, payer } = req.body;
-
   try {
-    const response = await payment.create({
-      body: {
-        token,
-        transaction_amount: Number(transaction_amount),
-        installments: Number(installments),
-        payer
-      }
-    });
+    const response = await payment.create(req.body);
 
     res.status(200).json(response);
   } catch (error) {
