@@ -32,6 +32,16 @@ const paymentSchema = new mongoose.Schema({
     finishWp: {
         type: Boolean,
         default: false
+    },
+    discount: {
+        type: Number,
+        default: 0,
+        required: false
+    },
+    maxInstallments: {
+        type: Number,
+        default: 3,
+        required: false
     }
 }, {
     timestamps: true  // Agrega los campos createdAt y updatedAt automáticamente
