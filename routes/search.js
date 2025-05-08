@@ -17,6 +17,7 @@ router.get("/", async (req, res) => {
 
     const filterConditions = {};
     let searchTitle = "";
+    let listingDescription = ""
 
     if (name) {
       filterConditions.$or = [
@@ -40,6 +41,7 @@ router.get("/", async (req, res) => {
       if (categoriaEncontrada) {
         filterConditions.category = categoriaEncontrada._id;
         searchTitle = categoriaEncontrada.name;
+        listingDescription = categoriaEncontrada.description
       }
     }
 
@@ -136,6 +138,7 @@ router.get("/", async (req, res) => {
         totalOfItems,
       },
       searchTitle,
+      listingDescription
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
