@@ -23,7 +23,7 @@ router.get("/", async (req, res) => {
     const limit = 20;
     const skip = (pageNumber - 1) * limit;
 
-    // Construcción dinámica de filtros
+    // Si no se recibe ningún parámetro adicional, devuelve todos los productos
     const filterConditions = {};
     let searchTitle = "";
     let listingDescription = "";
@@ -70,22 +70,17 @@ router.get("/", async (req, res) => {
       }
     }
 
-    //=== FILTRO POR RANGO DE PRECIO ===
     if (priceRange) {
-      // esperamos algo como "minAmax", ej "3125300a3450900"
       const [minPrice, maxPrice] = priceRange.split("a").map(Number);
       if (!isNaN(minPrice) && !isNaN(maxPrice)) {
         filterConditions.sellingPrice = { $gte: minPrice, $lte: maxPrice };
       }
     }
 
-    // Contamos total de items antes de paginar
     const totalOfItems = await Product.countDocuments(filterConditions);
 
     let products;
-    //=== ORDENAMIENTO POR RELEVANCIA (totalSold) ===
     if (sortBy === "relevance") {
-      // traemos todos, calculamos totalSold en memoria y luego paginamos
       const all = await Product.find(filterConditions)
         .populate({
           path: "category",
@@ -94,10 +89,15 @@ router.get("/", async (req, res) => {
         .populate("subcategory")
         .lean();
 
-      // calculamos totalSold para cada producto
       all.forEach((prod) => {
-        prod.totalSold = prod.variants.reduce((sumV, variant) => {
-          const soldInVariant = variant.stockByPickup.reduce(
+        // Aseguramos que prod.variants sea un array
+        const variants = Array.isArray(prod.variants) ? prod.variants : [];
+        prod.totalSold = variants.reduce((sumV, variant) => {
+          // Aseguramos que variant.stockByPickup sea un array
+          const pickups = Array.isArray(variant.stockByPickup)
+            ? variant.stockByPickup
+            : [];
+          const soldInVariant = pickups.reduce(
             (sumP, pickup) => sumP + (pickup.totalSold || 0),
             0
           );
@@ -105,18 +105,13 @@ router.get("/", async (req, res) => {
         }, 0);
       });
 
-      // ordenamos de mayor a menor totalSold
       all.sort((a, b) => b.totalSold - a.totalSold);
-
-      // paginación manual
       products = all.slice(skip, skip + limit);
     } else {
-      // para name, priceHigh y priceLow usamos .sort() de Mongo
       const sortConditions = {};
       if (sortBy === "name") sortConditions.name = 1;
       else if (sortBy === "priceHigh") sortConditions.sellingPrice = -1;
       else if (sortBy === "priceLow") sortConditions.sellingPrice = 1;
-      // si sortBy no está o es inválido, no aplicamos sort
 
       let query = Product.find(filterConditions);
       if (Object.keys(sortConditions).length) query = query.sort(sortConditions);
@@ -133,14 +128,11 @@ router.get("/", async (req, res) => {
 
     const nextPage = pageNumber * limit < totalOfItems;
 
-    // Reconstrucción de filtros activos para el front
     const categoriesSet = new Set();
-    const subcategoriesSet = new Set();
     const prices = [];
 
     products.forEach((product) => {
       if (product.category) categoriesSet.add(product.category._id.toString());
-      if (product.subcategory) subcategoriesSet.add(product.subcategory._id.toString());
       if (product.sellingPrice != null) prices.push(product.sellingPrice);
     });
 
