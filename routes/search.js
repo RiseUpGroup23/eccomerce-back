@@ -8,16 +8,25 @@ const Collection = require("../models/collection/collectionModel");
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const { name, category, subCategory, collection, page, range } = req.query;
+  const {
+    name,
+    category,
+    subCategory,
+    collection,
+    page = "1",
+    priceRange,
+    sortBy,
+  } = req.query;
 
   try {
-    const pageNumber = parseInt(page) || 1;
+    const pageNumber = parseInt(page, 10) || 1;
     const limit = 20;
     const skip = (pageNumber - 1) * limit;
 
+    // Construcción dinámica de filtros
     const filterConditions = {};
     let searchTitle = "";
-    let listingDescription = ""
+    let listingDescription = "";
 
     if (name) {
       filterConditions.$or = [
@@ -28,79 +37,115 @@ router.get("/", async (req, res) => {
     }
 
     if (category) {
-      let query = {};
-      if (mongoose.Types.ObjectId.isValid(category)) {
-        query = { _id: category };
-      } else {
-        query = { categoryLink: category };
-      }
-      const categoriaEncontrada = await Categoria.findOne(query).populate({
+      const query = mongoose.Types.ObjectId.isValid(category)
+        ? { _id: category }
+        : { categoryLink: category };
+      const cat = await Categoria.findOne(query).populate({
         path: "subcategories",
         model: SubCategoria,
       });
-      if (categoriaEncontrada) {
-        filterConditions.category = categoriaEncontrada._id;
-        searchTitle = categoriaEncontrada.name;
-        listingDescription = categoriaEncontrada.description
+      if (cat) {
+        filterConditions.category = cat._id;
+        searchTitle = cat.name;
+        listingDescription = cat.description;
       }
     }
 
     if (subCategory) {
-      let query = {};
-      if (mongoose.Types.ObjectId.isValid(subCategory)) {
-        query = { _id: subCategory };
-      } else {
-        query = { name: new RegExp(`^${subCategory}$`, "i") };
-      }
-      const subCategoriaEncontrada = await SubCategoria.findOne(query);
-      if (subCategoriaEncontrada) {
-        filterConditions.subcategory = subCategoriaEncontrada._id;
-        searchTitle = subCategoriaEncontrada.name;
+      const query = mongoose.Types.ObjectId.isValid(subCategory)
+        ? { _id: subCategory }
+        : { name: new RegExp(`^${subCategory}$`, "i") };
+      const subCat = await SubCategoria.findOne(query);
+      if (subCat) {
+        filterConditions.subcategory = subCat._id;
+        searchTitle = subCat.name;
       }
     }
 
     if (collection) {
-      const coleccion = await Collection.findOne({
-        collectionId: collection,
-      }).populate("products");
-      if (coleccion) {
-        const productIds = coleccion.products.map((p) => p._id);
-        filterConditions._id = { $in: productIds };
-        searchTitle = coleccion.title;
+      const col = await Collection.findOne({ collectionId: collection }).populate("products");
+      if (col) {
+        filterConditions._id = { $in: col.products.map((p) => p._id) };
+        searchTitle = col.title;
       }
     }
 
-    if (range) {
-      const [minPrice, maxPrice] = range.split("a").map(Number);
+    //=== FILTRO POR RANGO DE PRECIO ===
+    if (priceRange) {
+      // esperamos algo como "minAmax", ej "3125300a3450900"
+      const [minPrice, maxPrice] = priceRange.split("a").map(Number);
       if (!isNaN(minPrice) && !isNaN(maxPrice)) {
         filterConditions.sellingPrice = { $gte: minPrice, $lte: maxPrice };
       }
     }
 
-    const products = await Product.find(filterConditions)
-      .populate({
-        path: "category",
-        populate: { path: "subcategories", model: SubCategoria },
-      })
-      .populate("subcategory")
-      .skip(skip)
-      .limit(limit);
-
+    // Contamos total de items antes de paginar
     const totalOfItems = await Product.countDocuments(filterConditions);
+
+    let products;
+    //=== ORDENAMIENTO POR RELEVANCIA (totalSold) ===
+    if (sortBy === "relevance") {
+      // traemos todos, calculamos totalSold en memoria y luego paginamos
+      const all = await Product.find(filterConditions)
+        .populate({
+          path: "category",
+          populate: { path: "subcategories", model: SubCategoria },
+        })
+        .populate("subcategory")
+        .lean();
+
+      // calculamos totalSold para cada producto
+      all.forEach((prod) => {
+        prod.totalSold = prod.variants.reduce((sumV, variant) => {
+          const soldInVariant = variant.stockByPickup.reduce(
+            (sumP, pickup) => sumP + (pickup.totalSold || 0),
+            0
+          );
+          return sumV + soldInVariant;
+        }, 0);
+      });
+
+      // ordenamos de mayor a menor totalSold
+      all.sort((a, b) => b.totalSold - a.totalSold);
+
+      // paginación manual
+      products = all.slice(skip, skip + limit);
+    } else {
+      // para name, priceHigh y priceLow usamos .sort() de Mongo
+      const sortConditions = {};
+      if (sortBy === "name") sortConditions.name = 1;
+      else if (sortBy === "priceHigh") sortConditions.sellingPrice = -1;
+      else if (sortBy === "priceLow") sortConditions.sellingPrice = 1;
+      // si sortBy no está o es inválido, no aplicamos sort
+
+      let query = Product.find(filterConditions);
+      if (Object.keys(sortConditions).length) query = query.sort(sortConditions);
+
+      products = await query
+        .populate({
+          path: "category",
+          populate: { path: "subcategories", model: SubCategoria },
+        })
+        .populate("subcategory")
+        .skip(skip)
+        .limit(limit);
+    }
+
     const nextPage = pageNumber * limit < totalOfItems;
 
+    // Reconstrucción de filtros activos para el front
     const categoriesSet = new Set();
     const subcategoriesSet = new Set();
     const prices = [];
 
     products.forEach((product) => {
-      if (product.category) categoriesSet.add(product.category);
-      if (product.subcategory) subcategoriesSet.add(product.subcategory);
-      if (product.sellingPrice) prices.push(product.sellingPrice);
+      if (product.category) categoriesSet.add(product.category._id.toString());
+      if (product.subcategory) subcategoriesSet.add(product.subcategory._id.toString());
+      if (product.sellingPrice != null) prices.push(product.sellingPrice);
     });
 
     const categoriesArray = await Categoria.find({
-      _id: { $in: Array.from(categoriesSet).map((cat) => cat._id) },
+      _id: { $in: Array.from(categoriesSet) },
     }).populate("subcategories");
 
     const usedSubcategoryIds = new Set(
@@ -108,15 +153,14 @@ router.get("/", async (req, res) => {
     );
 
     const formattedCategories = categoriesArray.map((c) => {
-      const filteredSubcategories = c.subcategories.filter((sub) =>
+      const filteredSubs = c.subcategories.filter((sub) =>
         usedSubcategoryIds.has(sub._id.toString())
       );
-
       return {
         _id: c._id,
         name: c.name,
         categoryLink: c.categoryLink,
-        subcategories: filteredSubcategories.map((sub) => ({
+        subcategories: filteredSubs.map((sub) => ({
           _id: sub._id,
           name: sub.name,
           categoryLink: sub.categoryLink,
@@ -124,23 +168,24 @@ router.get("/", async (req, res) => {
       };
     });
 
-    const priceRange =
+    const priceRangeResult =
       prices.length > 0 ? [Math.min(...prices), Math.max(...prices)] : [0, 0];
 
     res.json({
       products,
       filters: {
         categories: formattedCategories,
-        priceRange,
+        priceRange: priceRangeResult,
       },
       pagination: {
         nextPage,
         totalOfItems,
       },
       searchTitle,
-      listingDescription
+      listingDescription,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
