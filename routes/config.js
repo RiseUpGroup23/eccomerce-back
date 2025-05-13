@@ -32,7 +32,7 @@ router.put('/', async function (req, res, next) {
       res.send("No configuration")
     } else {
       await ConfigModel.updateOne({}, { $set: req.body });
-      res.send("Configuration updated successfully");
+      res.send(existingConfig);
     }
 
   } catch (error) {
