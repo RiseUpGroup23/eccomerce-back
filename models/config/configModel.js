@@ -36,6 +36,20 @@ const ConfigSchema = new Schema({
         type: String,
         default: "#ffffff"
       }
+    },
+    footer: {
+      firstColumn: [{
+        title: String,
+        content: String
+      }],
+      secondColumn: [{
+        title: String,
+        content: String
+      }],
+      thirdColumn: [{
+        title: String,
+        content: String
+      }]
     }
   }
 });
