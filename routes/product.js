@@ -2,27 +2,62 @@ const express = require('express');
 const Product = require('../models/product/productModel');
 const Categoria = require('../models/category/categoryModel');
 const SubCategoria = require('../models/category/subCategoryModel');
+const Pickup = require('../models/pickup/pickupModel');
 const quantityInCarts = require('./modules/quantityInCarts');
 
 const router = express.Router();
 
 async function migrate() {
     try {
-        const productos = await Product.find({});
+        // 2) Obtener la lista de IDs de pickups válidos
+        const pickups = await Pickup.find({}, '_id');
+        const validPickups = new Set(pickups.map(p => p._id.toString()));
+        console.log(`Encontrados ${validPickups.size} pickups válidos.`);
+
+        // 3) Traer todos los productos
+        const productos = await Producto.find({});
+        console.log(`Procesando ${productos.length} productos...`);
 
         for (const prod of productos) {
+            let mutated = false;
+
+            // 4) Limpiar stockByPickup huérfanos
+            prod.variants = prod.variants.map(variant => {
+                const filtered = variant.stockByPickup.filter(sp =>
+                    validPickups.has(sp.pickup.toString())
+                );
+                if (filtered.length !== variant.stockByPickup.length) {
+                    mutated = true;
+                    return {
+                        ...variant.toObject(),
+                        stockByPickup: filtered
+                    };
+                }
+                return variant;
+            });
+
+            // 5) Recalcular totalStock
             const total = prod.variants.reduce((acc, variant) => {
                 return acc + variant.stockByPickup.reduce((sum, sp) => sum + sp.quantity, 0);
             }, 0);
 
             if (prod.totalStock !== total) {
                 prod.totalStock = total;
+                mutated = true;
+            }
+
+            // 6) Si hubo cambios, guardamos
+            if (mutated) {
                 await prod.save();
-                console.log(`  • Actualizado ${prod._id}: totalStock = ${total}`);
+                console.log(`  • Actualizado ${prod._id}: totalStock=${total} (${mutated ? 'con cambios internos' : 'solo totalStock'})`);
             }
         }
+
+        console.log('Migración completada.');
     } catch (err) {
         console.error('Error durante la migración:', err);
+    } finally {
+        process.exit(0);
     }
 }
 
