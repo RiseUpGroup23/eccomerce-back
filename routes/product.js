@@ -88,7 +88,6 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
-        migrate();
         const producto = await Product.findById(req.params.id);
         const quantityInCart = await quantityInCarts(producto._id)
         if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
@@ -100,6 +99,7 @@ router.get('/:id', async (req, res) => {
 
 router.get('/link/:linkProducto', async (req, res) => {
     try {
+        migrate();
         const producto = await Product.findOne({ link: req.params.linkProducto });
         if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
         res.json(producto);
