@@ -56,25 +56,55 @@ router.delete('/:id', async (req, res) => {
     session.startTransaction();
     try {
         // 1) Eliminar el pickup
-        const deletedPickup = await Pickup.findByIdAndDelete(req.params.id).session(session);
+        const deletedPickup = await Pickup
+            .findByIdAndDelete(req.params.id)
+            .session(session);
         if (!deletedPickup) {
             await session.abortTransaction();
             session.endSession();
             return res.status(404).json({ error: 'Pickup not found' });
         }
 
-        // 2) Quitar referencias en todos los productos:
-        //    Para cada variante, hacemos $pull de los elementos stockByPickup cuyo pickup sea el eliminado
+        // 2) Averiguar qué productos tenían referencias a este pickup
+        const impactedIds = await Product
+            .find({ 'variants.stockByPickup.pickup': deletedPickup._id })
+            .distinct('_id')
+            .session(session);
+
+        // 3) Quitar la referencia en stockByPickup de cada variante
         await Product.updateMany(
             {},
             { $pull: { 'variants.$[].stockByPickup': { pickup: deletedPickup._id } } },
             { session }
         );
 
+        // 4) Para cada producto afectado, recalc totalStock y actualizarlo
+        for (const prodId of impactedIds) {
+            // Cargar el producto ya con el stockByPickup purgado
+            const prod = await Product.findById(prodId).session(session);
+            if (!prod) continue;
+
+            // Recalcular totalStock
+            const newTotal = prod.variants.reduce((sumV, variant) => {
+                return sumV + variant.stockByPickup.reduce((sumP, sp) => sumP + sp.quantity, 0);
+            }, 0);
+
+            // Solo actualizar si ha cambiado
+            if (prod.totalStock !== newTotal) {
+                await Product.updateOne(
+                    { _id: prodId },
+                    { totalStock: newTotal },
+                    { session }
+                );
+            }
+        }
+
         await session.commitTransaction();
         session.endSession();
 
-        res.json({ message: 'Pickup successfully deleted and references cleaned up' });
+        res.json({
+            message: 'Pickup deleted, references cleaned up and totalStock recalculated'
+        });
     } catch (err) {
         await session.abortTransaction();
         session.endSession();
@@ -82,5 +112,6 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 module.exports = router;
