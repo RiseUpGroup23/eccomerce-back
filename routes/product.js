@@ -15,7 +15,7 @@ async function migrate() {
         console.log(`Encontrados ${validPickups.size} pickups válidos.`);
 
         // 3) Traer todos los productos
-        const productos = await Producto.find({});
+        const productos = await Product.find({});
         console.log(`Procesando ${productos.length} productos...`);
 
         for (const prod of productos) {
@@ -60,8 +60,6 @@ async function migrate() {
         process.exit(0);
     }
 }
-
-
 
 // Crear un producto (POST)
 router.post('/', async (req, res) => {
