@@ -6,14 +6,9 @@ const quantityInCarts = require('./modules/quantityInCarts');
 
 const router = express.Router();
 
-// migrateTotalStock.js
-
-const mongoose = require('mongoose');
-const Producto = require('./models/Producto'); // ajusta la ruta si es necesario
-
 async function migrate() {
     try {
-        const productos = await Producto.find({});
+        const productos = await Product.find({});
 
         for (const prod of productos) {
             const total = prod.variants.reduce((acc, variant) => {
