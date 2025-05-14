@@ -6,6 +6,32 @@ const quantityInCarts = require('./modules/quantityInCarts');
 
 const router = express.Router();
 
+// migrateTotalStock.js
+
+const mongoose = require('mongoose');
+const Producto = require('./models/Producto'); // ajusta la ruta si es necesario
+
+async function migrate() {
+    try {
+        const productos = await Producto.find({});
+
+        for (const prod of productos) {
+            const total = prod.variants.reduce((acc, variant) => {
+                return acc + variant.stockByPickup.reduce((sum, sp) => sum + sp.quantity, 0);
+            }, 0);
+
+            if (prod.totalStock !== total) {
+                prod.totalStock = total;
+                await prod.save();
+                console.log(`  • Actualizado ${prod._id}: totalStock = ${total}`);
+            }
+        }
+    } catch (err) {
+        console.error('Error durante la migración:', err);
+    }
+}
+
+
 
 // Crear un producto (POST)
 router.post('/', async (req, res) => {
@@ -62,6 +88,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
+        migrate();
         const producto = await Product.findById(req.params.id);
         const quantityInCart = await quantityInCarts(producto._id)
         if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
