@@ -173,6 +173,8 @@ router.get('/orders', async (req, res) => {
         // Consultar las órdenes con los filtros y paginación
         const orders = await Order.find(filterConditions)
             .populate("user") // Suponiendo que la propiedad 'user' es un ObjectId de la colección de usuarios
+            .populate("paymentMethod")
+            .populate("products.product")
             .skip(skip)
             .limit(limit)
             .sort(sortConditions);  // Aplicar la ordenación
