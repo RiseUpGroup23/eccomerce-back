@@ -145,9 +145,16 @@ router.get('/orders', async (req, res) => {
         // Filtro de nombre (q) si se pasa en la consulta
         const filterConditions = {};
 
-        // Filtro por nombre de pedido (q)
+        // Filtro por nombre de pedido (q) o nombre de cliente
         if (q) {
-            filterConditions.orderId = { $regex: new RegExp(q, 'i') }; // Asegurarse de que la regex sea correcta
+            const regex = new RegExp(q, 'i');
+            const qNumber = Number(q);
+            const isNumeric = !isNaN(qNumber);
+
+            filterConditions.$or = [
+                ...(isNumeric ? [{ orderId: qNumber }] : []),
+                { 'user.name': { $regex: regex } }
+            ];
         }
 
         // Crear el objeto de ordenación
