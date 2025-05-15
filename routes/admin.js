@@ -175,6 +175,7 @@ router.get('/orders', async (req, res) => {
             .populate("user") // Suponiendo que la propiedad 'user' es un ObjectId de la colección de usuarios
             .populate("paymentMethod")
             .populate("products.product")
+            .populate("logistics.pickup")
             .skip(skip)
             .limit(limit)
             .sort(sortConditions);  // Aplicar la ordenación
