@@ -138,26 +138,28 @@ router.get('/orders', async (req, res) => {
     try {
         const { page = 1, itemsPerPage = 10, q, sortBy = 'orderId', sortOrder = 'asc' } = req.query;
 
-        // Calcular la cantidad de saltos (skip) y el límite (limit) de las órdenes
         const skip = (page - 1) * itemsPerPage;
         const limit = parseInt(itemsPerPage, 10);
 
-        // Filtro de nombre (q) si se pasa en la consulta
         const filterConditions = {};
 
-        // Filtro por nombre de pedido (q) o nombre de cliente
         if (q) {
             const regex = new RegExp(q, 'i');
             const qNumber = Number(q);
             const isNumeric = !isNaN(qNumber);
 
+            let userIds = [];
+            if (!isNumeric) {
+                const matchingUsers = await mongoose.model('User').find({ name: { $regex: regex } }).select('_id');
+                userIds = matchingUsers.map(u => u._id);
+            }
+
             filterConditions.$or = [
                 ...(isNumeric ? [{ orderId: qNumber }] : []),
-                { 'user.name': { $regex: regex } }
+                ...(userIds.length > 0 ? [{ user: { $in: userIds } }] : [])
             ];
         }
 
-        // Crear el objeto de ordenación
         const sortConditions = {};
         if (sortBy === 'customerName') {
             sortConditions['user.name'] = sortOrder === 'asc' ? 1 : -1;
@@ -166,27 +168,21 @@ router.get('/orders', async (req, res) => {
         } else if (sortBy === 'totalAmount') {
             sortConditions['totalAmount'] = sortOrder === 'asc' ? 1 : -1;
         } else {
-            // Por defecto, ordenar por orderId
             sortConditions['orderId'] = sortOrder === 'asc' ? -1 : 1;
         }
 
-        // Consultar las órdenes con los filtros y paginación
         const orders = await Order.find(filterConditions)
-            .populate("user") // Suponiendo que la propiedad 'user' es un ObjectId de la colección de usuarios
+            .populate("user")
             .populate("paymentMethod")
             .populate("products.product")
             .populate("logistics.pickup")
             .skip(skip)
             .limit(limit)
-            .sort(sortConditions);  // Aplicar la ordenación
+            .sort(sortConditions);
 
-        // Contar el total de órdenes para calcular el total de páginas
         const totalOfItems = await Order.countDocuments(filterConditions);
-
-        // Determinar si hay más páginas
         const nextPage = (page * itemsPerPage) < totalOfItems;
 
-        // Enviar la respuesta con las órdenes, el total de elementos y si hay una siguiente página
         res.json({
             orders,
             nextPage,
