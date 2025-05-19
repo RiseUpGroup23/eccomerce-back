@@ -57,7 +57,7 @@ router.get('/products', async (req, res) => {
 
         // Ordenar por el campo seleccionado
         const sortFields = {};
-        if (['totalStock', 'sellingPrice', 'name'].includes(sortBy)) {
+        if (['totalStock', 'sellingPrice', 'listPrice', 'name'].includes(sortBy)) {
             sortFields[sortBy] = sortOrder === 'desc' ? -1 : 1; // 1 es ascendente, -1 es descendente
         } else {
             // Si no se proporciona un campo válido, ordenar por nombre de forma ascendente por defecto

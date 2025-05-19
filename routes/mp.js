@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { MercadoPagoConfig, Payment } = require('mercadopago');
+const { sendEmail } = require("./modules/mailer")
 
 const mp = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "APP_USR-2980739470681237-041511-dd3fddadddfccba8c4ebfccfc70d1cd2-229156870"
@@ -27,6 +28,21 @@ router.post('/webhook', async (req, res) => {
     console.error('Error en webhook:', error.message);
     res.sendStatus(500);
   }
+});
+
+router.post('/pruebamail', async (req, res) => {
+  const { to, subject, html, text } = req.body;
+
+  if (!to || !subject || !html) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios: to, subject, html' });
+  }
+
+  // try {
+  const info = await sendEmail();
+  res.json({ success: true, info });
+  // } catch (error) {
+  //   res.status(500).json({ success: false, error: 'Error al enviar el correo', detail: error });
+  // }
 });
 
 module.exports = router;
