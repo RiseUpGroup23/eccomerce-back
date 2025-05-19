@@ -4,6 +4,7 @@ const Order = require('../models/orders/orderModel');
 const Product = require('../models/product/productModel');
 const User = require('../models/user/userModel');
 const Cart = require('../models/cart/cartModel');
+const { sendEmail, thanksEmailTemplate } = require('./modules/mailer');
 
 router.post('/create', async (req, res) => {
     try {
@@ -27,6 +28,17 @@ router.post('/create', async (req, res) => {
 
         // Guardar la nueva orden
         await newOrder.save();
+
+        // Enviar mail de confirmacion
+        await sendEmail({
+            toEmail: user.email,
+            toName: user.name,
+            subject: "Confirmación de compra",
+            htmlContent: thanksEmailTemplate({
+                order: newOrder,
+                user: user
+            })
+        })
 
         // Responder con la orden creada
         res.status(201).json(newOrder);

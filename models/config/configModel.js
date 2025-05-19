@@ -18,6 +18,9 @@ const ConfigSchema = new Schema({
   phone: {
     type: String
   },
+  email: {
+    type: String
+  },
   customization: {
     logo: {
       type: String,
