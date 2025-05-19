@@ -30,7 +30,7 @@ const thanksEmailTemplate = async ({ order, user }) => {
             quantity: item.quantity,
             variant: item.variant,
             seller: item.seller,
-            image: item.images[0]
+            image: prod.images[0]
         };
     }));
 
