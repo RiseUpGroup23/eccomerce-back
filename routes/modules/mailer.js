@@ -29,19 +29,20 @@ const thanksEmailTemplate = async ({ order, user }) => {
             price: prod.sellingPrice,
             quantity: item.quantity,
             variant: item.variant,
-            seller: item.seller
+            seller: item.seller,
+            image: item.images[0]
         };
     }));
 
     // Construir filas de la tabla
     const itemsHtml = items.map(i => {
-        const variantText = i.variant ? ` (${i.variant})` : '';
-        const lineTotal = (i.price * i.quantity).toFixed(2);
+        const lineTotal = ((i.price * i.quantity) / 100).toFixed(2);
         return `<tr>
-      <td style="padding:8px;border-bottom:1px solid #eee;">
-        <a href="${i.link}" target="_blank" style="color:${primaryColor};text-decoration:none;">
-          ${i.name}${variantText}
-        </a>
+      <td style="padding:8px;border-bottom:1px solid #eee;display: flex;align-items: center;gap: .5rem;">
+        <img src="${i.image}" style="width: 40px;height: 40px;object-fit:contain;">
+        <span style="color:${primaryColor};text-decoration:none;">
+          ${i.name}
+        </span>
       </td>
       <td style="padding:8px;text-align:center;border-bottom:1px solid #eee;">${i.quantity}</td>
       <td style="padding:8px;text-align:right;border-bottom:1px solid #eee;">$${lineTotal}</td>
@@ -49,7 +50,7 @@ const thanksEmailTemplate = async ({ order, user }) => {
     }).join('');
 
     // Cadena HTML final en una sola línea
-    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background-color:#f9f9f9;padding:20px;color:#333;"><div style="max-width:600px;margin:auto;background-color:#fff;padding:20px;border-radius:8px;"><h2 style="color:${primaryColor};">Gracias por tu compra en ${shopName}!</h2><p style="font-size:16px;">Hola ${customerName},</p><p style="font-size:16px;">Hemos recibido tu pedido <strong>#${orderId}</strong> y está siendo procesado. Aquí tienes un resumen:</p><h3 style="color:${primaryColor};">Detalles del pedido</h3><table style="width:100%;border-collapse:collapse;font-size:14px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ddd;">Producto</th><th style="text-align:center;padding:8px;border-bottom:1px solid #ddd;">Cantidad</th><th style="text-align:right;padding:8px;border-bottom:1px solid #ddd;">Precio</th></tr></thead><tbody>${itemsHtml}</tbody></table><p style="font-size:16px;text-align:right;margin-top:20px;"><strong>Total: $${totalAmount.toFixed(2)}</strong></p><p style="font-size:14px;margin-top:30px;">Si tienes alguna pregunta, responde a este correo o contáctanos a ${shopEmail}.</p><p style="font-size:14px;">¡Gracias por confiar en nosotros!</p><p style="font-size:14px;">– El equipo de ${shopName}</p></div></body></html>`;
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background-color:#f9f9f9;padding:20px;color:#333;"><div style="max-width:600px;margin:auto;background-color:#fff;padding:20px;border-radius:8px;"><h2 style="color:${primaryColor};">Gracias por tu compra en ${shopName}!</h2><p style="font-size:16px;">Hola ${customerName},</p><p style="font-size:16px;">Hemos recibido tu pedido <strong>#${orderId}</strong> y está siendo procesado. Aquí tienes un resumen:</p><h3 style="color:${primaryColor};">Detalles del pedido</h3><table style="width:100%;border-collapse:collapse;font-size:14px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ddd;">Producto</th><th style="text-align:center;padding:8px;border-bottom:1px solid #ddd;">Cantidad</th><th style="text-align:right;padding:8px;border-bottom:1px solid #ddd;">Precio</th></tr></thead><tbody>${itemsHtml}</tbody></table><p style="font-size:16px;text-align:right;margin-top:20px;"><strong>Total: $${(totalAmount / 100).toFixed(2)}</strong></p><p style="font-size:14px;margin-top:30px;">Si tienes alguna pregunta, responde a este correo o contáctanos a ${shopEmail}.</p><p style="font-size:14px;">¡Gracias por confiar en nosotros!</p><p style="font-size:14px;">– El equipo de ${shopName}</p></div></body></html>`;
 
     return html;
 };
