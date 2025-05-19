@@ -150,7 +150,7 @@ router.get('/orders', async (req, res) => {
 
             let userIds = [];
             if (!isNumeric) {
-                const matchingUsers = await mongoose.model('User').find({ name: { $regex: regex } }).select('_id');
+                const matchingUsers = await User.find({ name: { $regex: regex } }).select('_id');
                 userIds = matchingUsers.map(u => u._id);
             }
 
