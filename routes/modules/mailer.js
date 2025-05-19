@@ -1,13 +1,14 @@
 const { Transaccional, MailParams } = require("@envialosimple/transaccional");
 
-const estr = new Transaccional("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NDc2Njk4NTEsImV4cCI6NDkwMzM0MzQ1MSwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJraWQiOiI2ODJiNTM1YmNhNjlmOTZjYjYwZWIyNDMiLCJhaWQiOiI2ODI2MWFiN2VlMmQ5ZjI2ZGUwMGU3MGQiLCJ1c2VybmFtZSI6Im5pY29hbWljb25lMUBnbWFpbC5jb20ifQ.qwNdtdqbbeT_5Q0a7ASHh_uAaM7w-foPPbN-cZJqJ0rmJvdu3b5ERsC9hox1sEIbEP--_x1HOAcLknOjIXIW4GZrqg9PX2S3BmZuJ4NWe0faos5dOSX2dNFmDb-7pG4CJa9xpu_fNYmq-yIyBLuA9kMkh_24cNVQg3FcewS5r2ZNpRj69yRuuymloKbJpPZs_Q3rfrmpciH7D6U6dUfW8YvJdVBjAYT8vsXZkD_ZIUUqTx4of_ny1FuSJhG4F3IKdSmigjMv3B96ZwH6m5xBLcvEBQ5ewb_LA_x1HGDh0qPHZPoEAGKvLN3s923RmFMg0UvAPwCzgX69QDHIoGafSA");
+const estr = new Transaccional("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NDc2NzY1NjUsImV4cCI6NDkwMzM1MDE2NSwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJraWQiOiI2ODJiNmQ5NTNiMWYxNThjMmQwOWMzMmUiLCJhaWQiOiI2ODI2MWFiN2VlMmQ5ZjI2ZGUwMGU3MGQiLCJ1c2VybmFtZSI6Im5pY29hbWljb25lMUBnbWFpbC5jb20ifQ.s6Lh8DHhGtFveR1iaAxJZF1stBfTHDC1CEKcRvQN4fTzuD1sYVOOeTwa9cmpDxqL8yIUbIzB6y__GfnxKnPHv1JR3bZwNpeb00jbT32BOHTqIFqC129wGqRNlQniSO_5WEQuGHT9bZW-8bdVcQyIId5ZpZPjW-zUf_neJZVt0oTq90EaVrG498xHIRQ-XK9HU5c6iPyBkNG-26zV7GMdWLK5vb7vp-HzneibbJo-tgeMNGd5K0kKc0mjiJrT-GihKQmkP4aUxHEfenB5N-T1yOTAD2GlBv3_xq9OAHQx1Mamu2Vhlso7heZdlskubxul-0oIwlfRRtnkDhm51hXc0A");
 const params = new MailParams();
 const { ConfigModel } = require('../../models/config/configModel');
+const Product = require('../../models/product/productModel');
 
 const thanksEmailTemplate = async ({ order, user }) => {
     const config = await ConfigModel.findOne({});
     const { shopName, email: shopEmail, shopColors } = config;
-    const primaryColor = shopColors.primaryColor || '#4CAF50';
+    const primaryColor = shopColors.primaryColor || 'lightgray';
     const { orderId, totalAmount, products } = order;
     const { name: customerName } = user;
 
@@ -19,7 +20,7 @@ const thanksEmailTemplate = async ({ order, user }) => {
     const items = await Promise.all(products.map(async item => {
         let prod = item.product;
         if (!prod.name) {
-            prod = await ProductoModel.findById(prod);
+            prod = await Product.findById(prod);
             if (!prod) throw new Error(`Producto ${item.product} no encontrado.`);
         }
         return {
@@ -62,11 +63,11 @@ const sendEmail = async ({
 }) => {
     const config = await ConfigModel.findOne({})
     const { shopName, email } = config
-    const formattedName = shopName?.toLowerCase().trim().split(" ").join("")
+    const formattedEmail = shopName?.toLowerCase().trim().split(" ").join("") + "@riseup.com.ar"
     params
-        .setFrom(formattedName, shopName)
+        .setFrom(formattedEmail, shopName)
         .setTo(toEmail, toName)
-        .setReplyTo(email)
+        .setReplyTo(email || formattedEmail)
         .setSubject(subject)
         .setHtml(htmlContent)
         .setText(textContent)

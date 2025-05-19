@@ -30,14 +30,16 @@ router.post('/create', async (req, res) => {
         await newOrder.save();
 
         // Enviar mail de confirmacion
+        const htmlEmailTemplate = await thanksEmailTemplate({
+            order: newOrder,
+            user: user
+        })
         await sendEmail({
             toEmail: user.email,
             toName: user.name,
             subject: "Confirmación de compra",
-            htmlContent: thanksEmailTemplate({
-                order: newOrder,
-                user: user
-            })
+            htmlContent: htmlEmailTemplate,
+            textContent: ""
         })
 
         // Responder con la orden creada

@@ -37,12 +37,18 @@ router.post('/pruebamail', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios: to, subject, html' });
   }
 
-  // try {
-  const info = await sendEmail();
-  res.json({ success: true, info });
-  // } catch (error) {
-  //   res.status(500).json({ success: false, error: 'Error al enviar el correo', detail: error });
-  // }
+  try {
+    const info = await sendEmail({
+      toName: "Nico Amicone",
+      toEmail: to,
+      subject,
+      htmlContent: html,
+      textContent: text
+    });
+    res.json({ success: true, info });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error al enviar el correo', detail: error });
+  }
 });
 
 module.exports = router;
