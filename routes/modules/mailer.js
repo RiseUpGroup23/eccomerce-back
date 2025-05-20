@@ -120,20 +120,34 @@ const sendEmail = async ({
     htmlContent,
     textContent
 }) => {
-    const config = await ConfigModel.findOne({})
-    const { shopName, email } = config
-    const formattedEmail = shopName?.toLowerCase().trim().split(" ").join("") + "@riseup.com.ar"
-    params
-        .setFrom(formattedEmail, shopName)
-        .setTo(toEmail, toName)
-        .setReplyTo(email || formattedEmail)
-        .setSubject(subject)
-        .setHtml(htmlContent)
-        .setText(textContent)
-        .setContext({ name: toName });
+    try {
+        const config = await ConfigModel.findOne({})
+        const { shopName, email } = config
+
+        const makeEmailLocalPart = shopName =>
+            shopName
+                .toLowerCase()                   // a minusculas
+                .trim()                          // quitar espacios al inicio/final
+                .normalize('NFD')                // descomponer acentos (ñ → n + ~)
+                .replace(/[\u0300-\u036f]/g, '') // quitar marcas de acento
+                .replace(/[^a-z0-9]/g, '');      // solo a–z y 0–9
+
+        const localPart = makeEmailLocalPart(shopName);
+        const formattedEmail = `${localPart}@riseup.com.ar`;
+        params
+            .setFrom(formattedEmail, shopName)
+            .setTo(toEmail, toName)
+            .setReplyTo(email || formattedEmail)
+            .setSubject(subject)
+            .setHtml(htmlContent)
+            .setText(textContent)
+            .setContext({ name: toName });
 
 
-    return await estr.mail.send(params);
+        return await estr.mail.send(params);
+    } catch (error) {
+        console.error("Error al enviar mail", error)
+    }
 }
 
 module.exports = { sendEmail, thanksEmailTemplate };
