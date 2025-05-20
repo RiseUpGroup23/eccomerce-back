@@ -46,10 +46,8 @@ const thanksEmailTemplate = async ({ order, user }) => {
           style="width:40px;height:40px;object-fit:contain;border-radius:4px;" 
           onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/0/0a/No-image-available.png';"
         >
-        <span style="color:${primaryColor};font-size:14px;">
-          <span style="color:${primaryColor};text-decoration:none;">
+        <span style="color:${primaryColor};font-size:14px;margin-left: 0.5rem;">
             ${i.name}
-          </span>
         </span>
       </td>
       <td style="padding:8px;text-align:center;border-bottom:1px solid #eee;font-size:14px;">${i.quantity}</td>
