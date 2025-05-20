@@ -7,8 +7,8 @@ const Product = require('../../models/product/productModel');
 
 const thanksEmailTemplate = async ({ order, user }) => {
     const config = await ConfigModel.findOne({});
-    const { shopName, email: shopEmail, shopColors } = config;
-    const primaryColor = shopColors.primaryColor || 'lightgray';
+    const { shopName, email: shopEmail, shopColors, customization: { logo } } = config;
+    const primaryColor = shopColors.get('primaryColor') || 'lightgray';
     const { orderId, totalAmount, products } = order;
     const { name: customerName } = user;
 
@@ -36,21 +36,72 @@ const thanksEmailTemplate = async ({ order, user }) => {
 
     // Construir filas de la tabla
     const itemsHtml = items.map(i => {
+        const variantText = i.variant ? ` (${i.variant})` : '';
         const lineTotal = ((i.price * i.quantity) / 100).toFixed(2);
         return `<tr>
-      <td style="padding:8px;border-bottom:1px solid #eee;display: flex;align-items: center;gap: .5rem;">
-        <img src="${i.image}" style="width: 40px;height: 40px;object-fit:contain;">
-        <span style="color:${primaryColor};text-decoration:none;">
-          ${i.name}
+      <td style="padding:8px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:8px;">
+        <img src="${i.image}" alt="${i.name}" style="width:40px;height:40px;object-fit:contain;border-radius:4px;">
+        <span style="color:${primaryColor};font-size:14px;">
+          <a href="${i.link}" target="_blank" style="color:${primaryColor};text-decoration:none;">
+            ${i.name}${variantText}
+          </a>
         </span>
       </td>
-      <td style="padding:8px;text-align:center;border-bottom:1px solid #eee;">${i.quantity}</td>
-      <td style="padding:8px;text-align:right;border-bottom:1px solid #eee;">$${lineTotal}</td>
+      <td style="padding:8px;text-align:center;border-bottom:1px solid #eee;font-size:14px;">${i.quantity}</td>
+      <td style="padding:8px;text-align:right;border-bottom:1px solid #eee;font-size:14px;">$${lineTotal}</td>
     </tr>`;
     }).join('');
 
     // Cadena HTML final en una sola línea
-    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background-color:#f9f9f9;padding:20px;color:#333;"><div style="max-width:600px;margin:auto;background-color:#fff;padding:20px;border-radius:8px;"><h2 style="color:${primaryColor};">Gracias por tu compra en ${shopName}!</h2><p style="font-size:16px;">Hola ${customerName},</p><p style="font-size:16px;">Hemos recibido tu pedido <strong>#${orderId}</strong> y está siendo procesado. Aquí tienes un resumen:</p><h3 style="color:${primaryColor};">Detalles del pedido</h3><table style="width:100%;border-collapse:collapse;font-size:14px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ddd;">Producto</th><th style="text-align:center;padding:8px;border-bottom:1px solid #ddd;">Cantidad</th><th style="text-align:right;padding:8px;border-bottom:1px solid #ddd;">Precio</th></tr></thead><tbody>${itemsHtml}</tbody></table><p style="font-size:16px;text-align:right;margin-top:20px;"><strong>Total: $${(totalAmount / 100).toFixed(2)}</strong></p><p style="font-size:14px;margin-top:30px;">Si tienes alguna pregunta, responde a este correo o contáctanos a ${shopEmail}.</p><p style="font-size:14px;">¡Gracias por confiar en nosotros!</p><p style="font-size:14px;">– El equipo de ${shopName}</p></div></body></html>`;
+    const html = `
+  <!DOCTYPE html>
+  <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Confirmación de Pedido</title>
+    </head>
+    <body style="margin:0;padding:20px;background-color:#f9f9f9;font-family:Arial,sans-serif;color:#333;">
+      <div style="max-width:600px;width:100%;margin:0 auto;background-color:#fff;padding:20px;border-radius:8px;">
+        <!-- Logo -->
+        ${logo ? `<div style="text-align:center;margin-bottom:20px;">
+          <img src="${logo}" alt="${shopName} logo" style="max-width:150px;width:100%;height:auto;">
+        </div>` : ''}
+        <h2 style="margin:0 0 16px;color:${primaryColor};font-size:24px;">¡Gracias por tu compra en ${shopName}!</h2>
+        <p style="font-size:16px;margin:0 0 16px;">Hola ${customerName},</p>
+        <p style="font-size:16px;margin:0 0 24px;">
+          Hemos recibido tu pedido <strong>#${orderId}</strong> y está siendo procesado. Aquí tienes un resumen:
+        </p>
+
+        <h3 style="margin:0 0 8px;color:${primaryColor};font-size:18px;">Detalles del pedido</h3>
+        <div style="overflow-x:auto;margin-bottom:24px;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd;">Producto</th>
+                <th style="text-align:center;padding:8px;border-bottom:1px solid #ddd;">Cantidad</th>
+                <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd;">Precio</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+        </div>
+
+        <p style="font-size:16px;text-align:right;margin:0 0 24px;">
+          <strong>Total: $${(totalAmount / 100).toFixed(2)}</strong>
+        </p>
+
+        <p style="font-size:14px;margin:0 0 16px;">
+          Si tienes alguna pregunta, responde a este correo o contáctanos en <a href="mailto:${shopEmail}" style="color:${primaryColor};text-decoration:none;">${shopEmail}</a>.
+        </p>
+        <p style="font-size:14px;margin:0;">¡Gracias por confiar en nosotros!</p>
+        <p style="font-size:14px;margin:8px 0 0;">– El equipo de ${shopName}</p>
+      </div>
+    </body>
+  </html>
+  `.replace(/\s{2,}/g, ' ').trim();
 
     return html;
 };
