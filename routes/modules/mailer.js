@@ -36,14 +36,19 @@ const thanksEmailTemplate = async ({ order, user }) => {
 
     // Construir filas de la tabla
     const itemsHtml = items.map(i => {
-        const variantText = i.variant ? ` (${i.variant})` : '';
         const lineTotal = ((i.price * i.quantity) / 100).toFixed(2);
+        const imgSrc = i.image || 'https://upload.wikimedia.org/wikipedia/commons/0/0a/No-image-available.png';
         return `<tr>
       <td style="padding:8px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:8px;">
-        <img src="${i.image}" alt="${i.name}" style="width:40px;height:40px;object-fit:contain;border-radius:4px;">
+        <img 
+          src="${imgSrc}" 
+          alt="${i.name}" 
+          style="width:40px;height:40px;object-fit:contain;border-radius:4px;" 
+          onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/0/0a/No-image-available.png';"
+        >
         <span style="color:${primaryColor};font-size:14px;">
           <a href="${i.link}" target="_blank" style="color:${primaryColor};text-decoration:none;">
-            ${i.name}${variantText}
+            ${i.name}
           </a>
         </span>
       </td>
@@ -65,7 +70,11 @@ const thanksEmailTemplate = async ({ order, user }) => {
       <div style="max-width:600px;width:100%;margin:0 auto;background-color:#fff;padding:20px;border-radius:8px;">
         <!-- Logo -->
         ${logo ? `<div style="text-align:center;margin-bottom:20px;">
-          <img src="${logo}" alt="${shopName} logo" style="max-width:150px;width:100%;height:auto;">
+          <img 
+            src="${logo}" 
+            alt="${shopName} logo" 
+            style="max-width:150px;width:100%;height:auto;background-color:#fff;padding:4px;border-radius:4px;"
+          >
         </div>` : ''}
         <h2 style="margin:0 0 16px;color:${primaryColor};font-size:24px;">¡Gracias por tu compra en ${shopName}!</h2>
         <p style="font-size:16px;margin:0 0 16px;">Hola ${customerName},</p>
@@ -93,9 +102,9 @@ const thanksEmailTemplate = async ({ order, user }) => {
           <strong>Total: $${(totalAmount / 100).toFixed(2)}</strong>
         </p>
 
-        <p style="font-size:14px;margin:0 0 16px;">
+        ${shopEmail ? `<p style="font-size:14px;margin:0 0 16px;">
           Si tienes alguna pregunta, responde a este correo o contáctanos en <a href="mailto:${shopEmail}" style="color:${primaryColor};text-decoration:none;">${shopEmail}</a>.
-        </p>
+        </p>`: ""}
         <p style="font-size:14px;margin:0;">¡Gracias por confiar en nosotros!</p>
         <p style="font-size:14px;margin:8px 0 0;">– El equipo de ${shopName}</p>
       </div>
