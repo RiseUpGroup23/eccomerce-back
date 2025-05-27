@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 const { ConfigModel } = require("../models/config/configModel")
 const clearExpiredCarts = require("./modules/cleanExpiredCarts")
+const fs = require('fs');
+const path = require('path');
 
 router.get('/storehead', async function (req, res) {
   try {
@@ -23,7 +25,7 @@ router.get('/storehead', async function (req, res) {
     res.send(finalHtml);
   } catch (err) {
     console.error('Error al renderizar HTML:', err);
-    res.status(500).send('Error al traer el head');
+    res.status(500).send(err);
   }
 });
 
