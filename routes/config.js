@@ -2,33 +2,6 @@ var express = require('express');
 var router = express.Router();
 const { ConfigModel } = require("../models/config/configModel")
 const clearExpiredCarts = require("./modules/cleanExpiredCarts")
-const fs = require('fs');
-const path = require('path');
-
-router.get('/storehead', async function (req, res) {
-  try {
-    const config = await ConfigModel.findOne({});
-
-
-    const indexPath = path.resolve(__dirname, '../build/index.html');
-    const html = await fs.promises.readFile(indexPath, 'utf8');
-    if (!config || !indexPath || !html) return
-
-    const finalHtml = html
-      .replace('{{TITLE}}', config?.shopName || 'Tienda')
-      .replace('{{FAVICON}}', config?.customization?.logo || '/favicon.ico')
-      .replace('{{THEME_COLOR}}', config?.shopColors?.primaryColor || '#000000')
-      .replace('{{DESCRIPTION}}', config?.description || 'Tienda Online')
-      .replace('{{APPLE_ICON}}', config?.customization?.logo || '/logo192.png')
-      .replace('{{MANIFEST}}', config?.manifest || '/manifest.json');
-
-    res.send(finalHtml);
-  } catch (err) {
-    console.error('Error al renderizar HTML:', err);
-    res.status(500).send(err);
-  }
-});
-
 
 /* GET of configuration */
 router.get('/', async function (req, res, next) {
