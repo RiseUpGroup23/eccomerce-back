@@ -7,10 +7,10 @@ router.get('/storehead', async function (req, res) {
   try {
     const config = await ConfigModel.findOne({});
 
-    if (!config) return
 
     const indexPath = path.resolve(__dirname, '../build/index.html');
     const html = await fs.promises.readFile(indexPath, 'utf8');
+    if (!config || !indexPath || !html) return
 
     const finalHtml = html
       .replace('{{TITLE}}', config?.shopName || 'Tienda')
@@ -23,7 +23,7 @@ router.get('/storehead', async function (req, res) {
     res.send(finalHtml);
   } catch (err) {
     console.error('Error al renderizar HTML:', err);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send('Error al traer el head');
   }
 });
 
