@@ -61,6 +61,47 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Obtener órdenes por intervalo de fechas
+router.get('/getByInterval', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ message: 'Debes proporcionar startDate y endDate en la query.' });
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        const orders = await Order.find({
+            createdAt: { $gte: start, $lte: end }
+        })
+            .select('orderId createdAt orderStatus totalAmount logistics paymentMethod user products') // ⬅️ solo campos necesarios
+            .populate({
+                path: 'user',
+                select: 'name' // solo nombre del cliente
+            })
+            .populate({
+                path: 'products.product',
+                select: 'name' // solo nombre del producto
+            })
+            .populate({
+                path: 'paymentMethod',
+                select: 'name' // solo nombre del método de pago
+            })
+            .populate({
+                path: 'logistics.pickup',
+                select: 'name' // solo nombre del punto de retiro
+            });
+
+        res.status(200).json(orders);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error al obtener las órdenes' });
+    }
+});
+
 // Obtener una orden por orderId
 router.get('/:orderId', async (req, res) => {
     const { orderId } = req.params;
