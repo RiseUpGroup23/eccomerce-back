@@ -23,16 +23,20 @@ router.get("/", async (req, res) => {
     const limit = 20;
     const skip = (pageNumber - 1) * limit;
 
-    // Si no se recibe ningún parámetro adicional, devuelve todos los productos
     const filterConditions = {};
     let searchTitle = "";
     let listingDescription = "";
 
+    // BÚSQUEDA AVANZADA POR PALABRAS EN NOMBRE, MARCA Y VARIANTES
     if (name) {
-      filterConditions.$or = [
-        { name: { $regex: new RegExp(name, "i") } },
-        { brand: { $regex: new RegExp(name, "i") } },
-      ];
+      const nameWords = name.trim().split(/\s+/);
+      filterConditions.$and = nameWords.map((word) => ({
+        $or: [
+          { name: { $regex: word, $options: "i" } },
+          { brand: { $regex: word, $options: "i" } },
+          { "variants.attributes.name": { $regex: word, $options: "i" } },
+        ],
+      }));
       searchTitle = `Resultados para: ${name}`;
     }
 
@@ -90,18 +94,12 @@ router.get("/", async (req, res) => {
         .lean();
 
       all.forEach((prod) => {
-        // Aseguramos que prod.variants sea un array
         const variants = Array.isArray(prod.variants) ? prod.variants : [];
         prod.totalSold = variants.reduce((sumV, variant) => {
-          // Aseguramos que variant.stockByPickup sea un array
           const pickups = Array.isArray(variant.stockByPickup)
             ? variant.stockByPickup
             : [];
-          const soldInVariant = pickups.reduce(
-            (sumP, pickup) => sumP + (pickup.totalSold || 0),
-            0
-          );
-          return sumV + soldInVariant;
+          return sumV + pickups.reduce((sumP, pickup) => sumP + (pickup.totalSold || 0), 0);
         }, 0);
       });
 
