@@ -34,16 +34,17 @@ router.post("/create-preference", async (req, res) => {
   try {
     const frontOrigin = req?.body?.origin?.endsWith("/") ? req.body.origin.slice(0, -1) : req?.body?.origin
     const backUrl = (req?.protocol?.endsWith("s") ? req?.protocol : (req.protocol + "s")) + '://' + req.get('host');
-
     const tempOrderId = uuid.v4()
 
     const body = {
-      items: req.body.items.map((item) => ({
-        title: item.name,
-        quantity: Number(item.quantity),
-        unit_price: Number(item.sellingPrice) / 100,
-        currency_id: "ARS",
-      })),
+      items: [
+        {
+          title: "Compra",
+          quantity: 1,
+          unit_price: req.body.amount,
+          currency_id: "ARS",
+        }
+      ],
       back_urls: {
         success: `${frontOrigin}/checkout/orderPlaced`,
         failure: `${frontOrigin}/checkout/orderPlaced`,
