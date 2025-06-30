@@ -43,11 +43,9 @@ const paymentSchema = new mongoose.Schema({
         default: 3,
         required: false
     },
-    bankTransfer: {
-        accountName: String,
-        cbu: String,
-        alias: String
-    }
+    accountName: String,
+    cbu: String,
+    alias: String
 }, {
     timestamps: true  // Agrega los campos createdAt y updatedAt automáticamente
 });
