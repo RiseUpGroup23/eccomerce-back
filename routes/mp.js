@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { MercadoPagoConfig, Payment, Preference } = require('mercadopago');
+const uuid = require('uuid')
 
 const mp = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN || "APP_USR-2980739470681237-041511-dd3fddadddfccba8c4ebfccfc70d1cd2-229156870"
+  accessToken: process.env.MP_ACCESS_TOKEN || "TEST-2980739470681237-041511-f22e6b0194eb879f65be2875f14bc098-229156870"
 });
 
 const payment = new Payment(mp);
@@ -31,29 +32,29 @@ router.post('/webhook', async (req, res) => {
 
 router.post("/create-preference", async (req, res) => {
   try {
-    const frontOrigin = req.body.origin.endsWith("/") ? req.body.origin.slice(0, -1) : req.body.origin
-    const backUrl = (req.protocol.endsWith("s") ? req.protocol : (req.protocol + "s")) + '://' + req.get('host');
-    console.log("noti url", `${backUrl}/mercadopago/webhook`);
+    const frontOrigin = req?.body?.origin?.endsWith("/") ? req.body.origin.slice(0, -1) : req?.body?.origin
+    const backUrl = (req?.protocol?.endsWith("s") ? req?.protocol : (req.protocol + "s")) + '://' + req.get('host');
+
+    const tempOrderId = uuid.v4()
 
     const body = {
-      items: [
-        {
-          title: req.body.name,
-          quantity: Number(req.body.quantity),
-          unit_price: Number(req.body.price),
-          currency_id: "ARS",
-        },
-      ],
+      items: req.body.items.map((item) => ({
+        title: item.name,
+        quantity: Number(item.quantity),
+        unit_price: Number(item.sellingPrice) / 100,
+        currency_id: "ARS",
+      })),
       back_urls: {
-        success: `${frontOrigin}/reserva-confirmada`,
-        failure: `${frontOrigin}/reserva-error`,
+        success: `${frontOrigin}/checkout/orderPlaced`,
+        failure: `${frontOrigin}/checkout/orderPlaced`,
       },
       auto_return: "approved",
-      notification_url: `${backUrl}/mercadopago/webhook`,
+      notification_url: `${backUrl}/mp/webhook`,
       metadata: req.body,
+      external_reference: tempOrderId,
     };
 
-    const preference = new Preference(client);
+    const preference = new Preference(mp);
     const result = await preference.create({ body });
 
     res.json({
