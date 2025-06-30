@@ -47,7 +47,7 @@ router.post("/create-preference", async (req, res) => {
       ],
       back_urls: {
         success: `${frontOrigin}/checkout/orderPlaced`,
-        failure: `${frontOrigin}/checkout/orderPlaced`,
+        failure: `${frontOrigin}/checkout/error`,
       },
       auto_return: "approved",
       notification_url: `${backUrl}/mp/webhook`,
