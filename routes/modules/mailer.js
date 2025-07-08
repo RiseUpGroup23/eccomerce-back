@@ -6,39 +6,39 @@ const { ConfigModel } = require('../../models/config/configModel');
 const Product = require('../../models/product/productModel');
 
 const thanksEmailTemplate = async ({ order, user }) => {
-    const config = await ConfigModel.findOne({});
-    const { shopName, email: shopEmail, shopColors, phone } = config;
-    const primaryColor = shopColors.get('primaryColor') || 'lightgray';
-    const { orderId, totalAmount, products } = order;
-    const { name: customerName } = user;
+  const config = await ConfigModel.findOne({});
+  const { shopName, email: shopEmail, shopColors, phone } = config;
+  const primaryColor = shopColors.get('primaryColor') || 'lightgray';
+  const { orderId, totalAmount, products } = order;
+  const { name: customerName } = user;
 
-    if (!products || products.length === 0) {
-        throw new Error('El pedido no contiene productos.');
+  if (!products || products.length === 0) {
+    throw new Error('El pedido no contiene productos.');
+  }
+
+  // Asegurarnos de tener datos completos de producto
+  const items = await Promise.all(products.map(async item => {
+    let prod = item.product;
+    if (!prod.name) {
+      prod = await Product.findById(prod);
+      if (!prod) throw new Error(`Producto ${item.product} no encontrado.`);
     }
+    return {
+      name: prod.name,
+      link: prod.link,
+      price: prod.sellingPrice,
+      quantity: item.quantity,
+      variant: item.variant,
+      seller: item.seller,
+      image: prod.images[0]
+    };
+  }));
 
-    // Asegurarnos de tener datos completos de producto
-    const items = await Promise.all(products.map(async item => {
-        let prod = item.product;
-        if (!prod.name) {
-            prod = await Product.findById(prod);
-            if (!prod) throw new Error(`Producto ${item.product} no encontrado.`);
-        }
-        return {
-            name: prod.name,
-            link: prod.link,
-            price: prod.sellingPrice,
-            quantity: item.quantity,
-            variant: item.variant,
-            seller: item.seller,
-            image: prod.images[0]
-        };
-    }));
-
-    // Construir filas de la tabla
-    const itemsHtml = items.map(i => {
-        const lineTotal = ((i.price * i.quantity) / 100).toFixed(2);
-        const imgSrc = i.image || 'https://upload.wikimedia.org/wikipedia/commons/0/0a/No-image-available.png';
-        return `<tr>
+  // Construir filas de la tabla
+  const itemsHtml = items.map(i => {
+    const lineTotal = ((i.price * i.quantity) / 100).toFixed(2);
+    const imgSrc = i.image || 'https://upload.wikimedia.org/wikipedia/commons/0/0a/No-image-available.png';
+    return `<tr>
       <td style="padding:8px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:8px;">
         <img 
           src="${imgSrc}" 
@@ -53,18 +53,18 @@ const thanksEmailTemplate = async ({ order, user }) => {
       <td style="padding:8px;text-align:center;border-bottom:1px solid #eee;font-size:14px;">${i.quantity}</td>
       <td style="padding:8px;text-align:right;border-bottom:1px solid #eee;font-size:14px;">$${lineTotal}</td>
     </tr>`;
-    }).join('');
+  }).join('');
 
-    // Construir bloque de contacto según disponibilidad
-    const contactMethods = [];
-    if (shopEmail) contactMethods.push(`por email: <a href="mailto:${shopEmail}" style="color:${primaryColor};text-decoration:none;">${shopEmail}</a>`);
-    if (phone) contactMethods.push(`a nuestro teléfono: ${phone}`);
-    const contactHtml = contactMethods.length
-        ? `<p style="font-size:14px;margin:0 0 16px;">Ante dudas o consultas comunicate ${contactMethods.join(' o ')}.</p>`
-        : '';
+  // Construir bloque de contacto según disponibilidad
+  const contactMethods = [];
+  if (shopEmail) contactMethods.push(`por email: <a href="mailto:${shopEmail}" style="color:${primaryColor};text-decoration:none;">${shopEmail}</a>`);
+  if (phone) contactMethods.push(`a nuestro teléfono: ${phone}`);
+  const contactHtml = contactMethods.length
+    ? `<p style="font-size:14px;margin:0 0 16px;">Ante dudas o consultas comunicate ${contactMethods.join(' o ')}.</p>`
+    : '';
 
-    // Cadena HTML final en una sola línea
-    const html = `
+  // Cadena HTML final en una sola línea
+  const html = `
   <!DOCTYPE html>
   <html lang="es">
     <head>
@@ -108,44 +108,77 @@ const thanksEmailTemplate = async ({ order, user }) => {
   </html>
   `.replace(/\s{2,}/g, ' ').trim();
 
-    return html;
+  return html;
 };
 
+const notifySellerOfSale = async ({ subject, htmlContent, textContent }) => {
+  try {
+    const config = await ConfigModel.findOne({})
+    const { shopName, email } = config;
+
+    const localPart = shopName
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    const formattedEmail = `${localPart}@riseup.com.ar`;
+    const sellerEmail = email;
+
+    params
+      .setFrom(formattedEmail, shopName)
+      .setTo(sellerEmail, "Vendedor")
+      .setReplyTo(email || formattedEmail)
+      .setSubject(`Nueva venta: ${subject}`)
+      .setHtml(htmlContent)
+      .setText(textContent)
+      .setContext({ name: "Vendedor" });
+
+    return await estr.mail.send(params);
+  } catch (error) {
+    console.error("Error al enviar notificación al vendedor", error);
+  }
+};
+
+
 const sendEmail = async ({
-    toEmail,
-    toName,
-    subject,
-    htmlContent,
-    textContent
+  toEmail,
+  toName,
+  subject,
+  htmlContent,
+  textContent
 }) => {
-    try {
-        const config = await ConfigModel.findOne({})
-        const { shopName, email } = config
+  try {
+    const config = await ConfigModel.findOne({})
+    const { shopName, email } = config
 
-        const makeEmailLocalPart = shopName =>
-            shopName
-                .toLowerCase()                   // a minusculas
-                .trim()                          // quitar espacios al inicio/final
-                .normalize('NFD')                // descomponer acentos (ñ → n + ~)
-                .replace(/[\u0300-\u036f]/g, '') // quitar marcas de acento
-                .replace(/[^a-z0-9]/g, '');      // solo a–z y 0–9
+    const makeEmailLocalPart = shopName =>
+      shopName
+        .toLowerCase()                   // a minusculas
+        .trim()                          // quitar espacios al inicio/final
+        .normalize('NFD')                // descomponer acentos (ñ → n + ~)
+        .replace(/[\u0300-\u036f]/g, '') // quitar marcas de acento
+        .replace(/[^a-z0-9]/g, '');      // solo a–z y 0–9
 
-        const localPart = makeEmailLocalPart(shopName);
-        const formattedEmail = `${localPart}@riseup.com.ar`;
-        params
-            .setFrom(formattedEmail, shopName)
-            .setTo(toEmail, toName)
-            .setReplyTo(email || formattedEmail)
-            .setSubject(subject)
-            .setHtml(htmlContent)
-            .setText(textContent)
-            .setContext({ name: toName });
+    const localPart = makeEmailLocalPart(shopName);
+    const formattedEmail = `${localPart}@riseup.com.ar`;
+    params
+      .setFrom(formattedEmail, shopName)
+      .setTo(toEmail, toName)
+      .setReplyTo(email || formattedEmail)
+      .setSubject(subject)
+      .setHtml(htmlContent)
+      .setText(textContent)
+      .setContext({ name: toName });
 
-
-        return await estr.mail.send(params);
-    } catch (error) {
-        console.error("Error al enviar mail", error)
-    }
+    // Enviar copia al vendedor
+    await notifySellerOfSale({ subject, htmlContent, textContent });
+    // Enviar el email al destinatario
+    return await estr.mail.send(params);
+  } catch (error) {
+    console.error("Error al enviar mail", error)
+  }
 }
 
 module.exports = { sendEmail, thanksEmailTemplate };
