@@ -7,9 +7,20 @@ const Collection = require("../models/collection/collectionModel");
 
 const router = express.Router();
 
-// 🔤 Función para eliminar tildes
+// 🔤 Función para eliminar tildes del input (opcional si lo normalizás de otra forma)
 const removeDiacritics = (str) =>
   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+// 🔤 Función para construir regex que matchee con y sin tildes
+const toLooseRegex = (word) => {
+  return word
+    .replace(/a/g, "[aá]")
+    .replace(/e/g, "[eé]")
+    .replace(/i/g, "[ií]")
+    .replace(/o/g, "[oó]")
+    .replace(/u/g, "[uúü]")
+    .replace(/n/g, "[nñ]");
+};
 
 router.get("/", async (req, res) => {
   const {
@@ -31,18 +42,21 @@ router.get("/", async (req, res) => {
     let searchTitle = "";
     let listingDescription = "";
 
-    // 🔍 Búsqueda avanzada insensible a tildes y por palabra
+    // 🔍 Búsqueda con regex flexible
     if (name) {
       const normalizedInput = removeDiacritics(name.trim().toLowerCase());
       const nameWords = normalizedInput.split(/\s+/);
 
-      filterConditions.$and = nameWords.map((word) => ({
-        $or: [
-          { name: { $regex: word, $options: "i" } },
-          { brand: { $regex: word, $options: "i" } },
-          { "variants.attributes.name": { $regex: word, $options: "i" } },
-        ],
-      }));
+      filterConditions.$and = nameWords.map((word) => {
+        const looseRegex = new RegExp(toLooseRegex(word), "i");
+        return {
+          $or: [
+            { name: { $regex: looseRegex } },
+            { brand: { $regex: looseRegex } },
+            { "variants.attributes.name": { $regex: looseRegex } },
+          ],
+        };
+      });
 
       searchTitle = `Resultados para: ${name}`;
     }
