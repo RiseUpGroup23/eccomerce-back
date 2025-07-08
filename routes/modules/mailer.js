@@ -111,7 +111,7 @@ const thanksEmailTemplate = async ({ order, user }) => {
   return html;
 };
 
-const notifySellerOfSale = async ({ subject, htmlContent, textContent }) => {
+const notifySellerOfSale = async ({ htmlContent, textContent }) => {
   try {
     const config = await ConfigModel.findOne({})
     const { shopName, email } = config;
@@ -130,7 +130,7 @@ const notifySellerOfSale = async ({ subject, htmlContent, textContent }) => {
       .setFrom(formattedEmail, shopName)
       .setTo(sellerEmail, "Vendedor")
       .setReplyTo(email || formattedEmail)
-      .setSubject(`Nueva venta: ${subject}`)
+      .setSubject(`Aviso: Nueva venta`)
       .setHtml(htmlContent)
       .setText(textContent)
       .setContext({ name: "Vendedor" });
@@ -175,7 +175,7 @@ const sendEmail = async ({
     // Enviar el email al destinatario
     await estr.mail.send(params);
     // Enviar copia al vendedor
-    await notifySellerOfSale({ subject, htmlContent, textContent });
+    await notifySellerOfSale({ htmlContent, textContent });
     return true;
   } catch (error) {
     console.error("Error al enviar mail", error)
