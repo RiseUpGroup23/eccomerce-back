@@ -7,6 +7,10 @@ const Collection = require("../models/collection/collectionModel");
 
 const router = express.Router();
 
+// 🔤 Función para eliminar tildes
+const removeDiacritics = (str) =>
+  str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 router.get("/", async (req, res) => {
   const {
     name,
@@ -27,9 +31,11 @@ router.get("/", async (req, res) => {
     let searchTitle = "";
     let listingDescription = "";
 
-    // BÚSQUEDA AVANZADA POR PALABRAS EN NOMBRE, MARCA Y VARIANTES
+    // 🔍 Búsqueda avanzada insensible a tildes y por palabra
     if (name) {
-      const nameWords = name.trim().split(/\s+/);
+      const normalizedInput = removeDiacritics(name.trim().toLowerCase());
+      const nameWords = normalizedInput.split(/\s+/);
+
       filterConditions.$and = nameWords.map((word) => ({
         $or: [
           { name: { $regex: word, $options: "i" } },
@@ -37,6 +43,7 @@ router.get("/", async (req, res) => {
           { "variants.attributes.name": { $regex: word, $options: "i" } },
         ],
       }));
+
       searchTitle = `Resultados para: ${name}`;
     }
 
