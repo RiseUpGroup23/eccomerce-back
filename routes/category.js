@@ -11,17 +11,16 @@ const generateLink = (base, name) => {
 
     const slug = name
         .toLowerCase()
-        .normalize('NFD')                     // separar acentos
-        .replace(/[\u0300-\u036f]/g, '')      // remover tildes
-        .replace(/[^a-z0-9\\s-]/g, '')        // remover símbolos
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
         .trim()
-        .replace(/\\s+/g, '-')                // espacios por guión
-        .replace(/-+/g, '-')                  // eliminar guiones duplicados
-        .replace(/^[-]+|[-]+$/g, '');         // quitar guiones al inicio/final
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^[-]+|[-]+$/g, '');
 
     return base ? `${base}/${slug}` : slug;
 };
-
 
 // Crear una categoría con subcategorías
 router.post('/', async (req, res) => {
@@ -54,7 +53,7 @@ router.post('/', async (req, res) => {
 // Obtener todas las categorías
 router.get('/', async (_req, res) => {
     try {
-        const categories = await Category.find();
+        const categories = await Category.find().populate('subcategories');
         res.json(categories);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -73,7 +72,7 @@ router.get('/:idOrLink', async (req, res) => {
 
         const validSubs = await SubCategory.find({ '_id': { $in: category.subcategories } }).select('_id');
         const validIds = validSubs.map(sub => sub._id.toString());
-        category.subcategories = category.subcategories.filter(id => validIds.includes(id.toString()));
+        category.subcategories = category.subcategories.filter(sub => validIds.includes(sub._id.toString()));
 
         await category.save();
         res.json(category);
@@ -101,14 +100,14 @@ router.put('/:id', async (req, res) => {
         const { name, description } = req.body;
         const categoryLink = generateLink('', name);
 
-        const category = await Category.findByIdAndUpdate(
+        const categoryUpdated = await Category.findByIdAndUpdate(
             req.params.id,
             { name, description, categoryLink },
             { new: true }
-        );
+        ).populate('subcategories');
 
-        if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
-        res.json(category);
+        if (!categoryUpdated) return res.status(404).json({ error: 'Categoría no encontrada' });
+        res.json(categoryUpdated);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
