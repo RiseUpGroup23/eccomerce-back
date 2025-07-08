@@ -94,20 +94,44 @@ router.get('/:id/subcategorias', async (req, res) => {
     }
 });
 
-// Actualizar una categoría
+// Actualizar una categoría y sus subcategorías
 router.put('/:id', async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, subcategories = [] } = req.body;
+
+        // Generar nuevo link de la categoría
         const categoryLink = generateLink('', name);
 
-        const categoryUpdated = await Category.findByIdAndUpdate(
-            req.params.id,
-            { name, description, categoryLink },
-            { new: true }
-        ).populate('subcategories');
+        // Buscar y actualizar la categoría
+        const category = await Category.findById(req.params.id);
+        if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
 
-        if (!categoryUpdated) return res.status(404).json({ error: 'Categoría no encontrada' });
-        res.json(categoryUpdated);
+        category.name = name;
+        category.description = description;
+        category.categoryLink = categoryLink;
+
+        const updatedSubcategoryIds = [];
+
+        for (const sub of subcategories) {
+            if (sub._id) {
+                // Actualizar subcategoría existente
+                const existingSub = await SubCategory.findById(sub._id);
+                if (existingSub) {
+                    existingSub.name = sub.name;
+                    existingSub.description = sub.description;
+                    existingSub.categoryLink = generateLink(categoryLink, sub.name);
+                    await existingSub.save();
+                    updatedSubcategoryIds.push(existingSub._id);
+                }
+            }
+        }
+
+        // Asignar subcategorías válidas
+        category.subcategories = updatedSubcategoryIds;
+        await category.save();
+
+        const populatedCategory = await Category.findById(category._id).populate('subcategories');
+        res.json(populatedCategory);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -162,7 +186,7 @@ router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {
         category.subcategories = category.subcategories.filter(
             id => id.toString() !== req.params.subcategoryId
         );
-        
+
         await SubCategory.findByIdAndDelete(req.params.subcategoryId);
 
         await category.save();
