@@ -1,64 +1,58 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Category = require('../models/category/categoryModel');
 const SubCategory = require('../models/category/subCategoryModel');
-const mongoose = require('mongoose');
+
 const router = express.Router();
 
-// Crear una categoría y sus subcategorías (POST)
+// Función utilitaria para generar links amigables
+const generateLink = (base, name) => {
+    if (!name || typeof name !== 'string') return '';
+
+    const slug = name
+        .toLowerCase()
+        .normalize('NFD')                     // separar acentos
+        .replace(/[\u0300-\u036f]/g, '')      // remover tildes
+        .replace(/[^a-z0-9\\s-]/g, '')        // remover símbolos
+        .trim()
+        .replace(/\\s+/g, '-')                // espacios por guión
+        .replace(/-+/g, '-')                  // eliminar guiones duplicados
+        .replace(/^[-]+|[-]+$/g, '');         // quitar guiones al inicio/final
+
+    return base ? `${base}/${slug}` : slug;
+};
+
+
+// Crear una categoría con subcategorías
 router.post('/', async (req, res) => {
     try {
-        // Crear la nueva categoría
-        const newCategory = new Category({ ...req.body, subcategories: [] });
-        const categorySaved = await newCategory.save();
+        const { name, description, subcategories = [] } = req.body;
+        const categoryLink = generateLink('', name);
 
-        // Si la categoría tiene subcategorías, crear y asociarlas
-        if (req.body.subcategories && Array.isArray(req.body.subcategories)) {
-            const subcategoriesToAdd = [];
+        const newCategory = new Category({ name, description, categoryLink, subcategories: [] });
+        const savedCategory = await newCategory.save();
 
-            // Crear subcategorías y asociarlas con la categoría
-            for (const subcategoryData of req.body.subcategories) {
-                const { name, description } = subcategoryData;
-
-                // Crear el link de la subcategoría
-                const subcategoryLink = `${categorySaved.categoryLink ? categorySaved.categoryLink + '/' : ''}${name.toLowerCase().replace(/\s+/g, '-')}`;
-
-                // Verificar si ya existe una subcategoría con ese categoryLink
-                let subcategory = await SubCategory.findOne({ categoryLink: subcategoryLink });
-
-                if (!subcategory) {
-                    // Si no existe, crear la subcategoría
-                    subcategory = new SubCategory({
-                        name: name,
-                        description: description,
-                        categoryLink: subcategoryLink,
-                    });
-
-                    // Guardar la subcategoría
-                    await subcategory.save();
-                }
-
-                // Agregar el ID de la subcategoría al array de subcategorías de la categoría
-                subcategoriesToAdd.push(subcategory._id);
+        const subcategoryIds = [];
+        for (const { name: subName, description: subDesc } of subcategories) {
+            const subLink = generateLink(savedCategory.categoryLink, subName);
+            let sub = await SubCategory.findOne({ categoryLink: subLink });
+            if (!sub) {
+                sub = await new SubCategory({ name: subName, description: subDesc, categoryLink: subLink }).save();
             }
-
-            // Asociar las subcategorías creadas con la categoría principal
-            categorySaved.subcategories = subcategoriesToAdd;
-
-            // Guardar la categoría con las subcategorías asociadas
-            await categorySaved.save();
+            subcategoryIds.push(sub._id);
         }
 
-        // Responder con la categoría recién creada y sus subcategorías
-        res.status(201).json(categorySaved);
+        savedCategory.subcategories = subcategoryIds;
+        await savedCategory.save();
+
+        res.status(201).json(savedCategory);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-
-
-// Obtener todas las categorías (GET)
-router.get('/', async (req, res) => {
+// Obtener todas las categorías
+router.get('/', async (_req, res) => {
     try {
         const categories = await Category.find();
         res.json(categories);
@@ -67,185 +61,121 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Obtener una categoría por ID o por nombre (GET)
-router.get('/:idOrName', async (req, res) => {
+// Obtener categoría por ID o categoryLink
+router.get('/:idOrLink', async (req, res) => {
     try {
-        // Verificar si el parámetro es un ID de MongoDB válido o un nombre
-        let category;
-        const idOrName = req.params.idOrName.trim().toLowerCase();  // Convertir a minúsculas el parámetro de búsqueda
+        const value = req.params.idOrLink.trim().toLowerCase();
+        const category = mongoose.Types.ObjectId.isValid(value)
+            ? await Category.findById(value).populate('subcategories')
+            : await Category.findOne({ categoryLink: value }).populate('subcategories');
 
-        if (mongoose.Types.ObjectId.isValid(idOrName)) {
-            // Buscar por ID si el parámetro es un ID válido
-            category = await Category.findById(idOrName).populate('subcategories');
-        } else {
-            // Buscar por nombre, ignorando mayúsculas y minúsculas
-            category = await Category.findOne({
-                categoryLink: idOrName
-            }).populate('subcategories');
-        }
-
-        // Verificar si la categoría fue encontrada
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
 
-        // Obtener todos los IDs de las subcategorías que existen en la base de datos
-        const validSubcategories = await SubCategory.find({
-            '_id': { $in: category.subcategories } // Busca los _id de las subcategorías que existen en la base de datos
-        }).select('_id'); // Solo traer los IDs de las subcategorías existentes
+        const validSubs = await SubCategory.find({ '_id': { $in: category.subcategories } }).select('_id');
+        const validIds = validSubs.map(sub => sub._id.toString());
+        category.subcategories = category.subcategories.filter(id => validIds.includes(id.toString()));
 
-        // Extraer los IDs válidos de las subcategorías existentes
-        const validSubcategoryIds = validSubcategories.map(sub => sub._id.toString());
-
-        // Filtrar las subcategorías para eliminar las que no existen
-        const updatedSubcategories = category.subcategories.filter(subcategory =>
-            validSubcategoryIds.includes(subcategory._id.toString())
-        );
-
-        // Actualizar la categoría con los IDs válidos de subcategorías
-        category.subcategories = updatedSubcategories;
-
-        // Guardar la categoría con los cambios
         await category.save();
-
-        // Enviar la categoría con las subcategorías válidas
         res.json(category);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Obtener subcategorías de una categoría por ID (GET)
-router.get('/:idCategoria/subcategorias', async (req, res) => {
+// Obtener subcategorías de una categoría
+router.get('/:id/subcategorias', async (req, res) => {
     try {
-        const { idCategoria } = req.params;
-
-        // Buscar la categoría por su ID
-        const category = await Category.findById(idCategoria);
+        const category = await Category.findById(req.params.id);
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
 
-        // Devolver las subcategorías asociadas
-        const subcategorias = await SubCategory.find({ _id: { $in: category.subcategories } });
-
-        res.json(subcategorias);
+        const subcategories = await SubCategory.find({ _id: { $in: category.subcategories } });
+        res.json(subcategories);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Actualizar una categoría (PUT)
+// Actualizar una categoría
 router.put('/:id', async (req, res) => {
     try {
-        const categoryUpdated = await Category.findByIdAndUpdate(
+        const { name, description } = req.body;
+        const categoryLink = generateLink('', name);
+
+        const category = await Category.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            { name, description, categoryLink },
             { new: true }
         );
-        if (!categoryUpdated) return res.status(404).json({ error: 'Categoría no encontrada' });
-        res.json(categoryUpdated);
+
+        if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
+        res.json(category);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Eliminar una categoría (DELETE)
+// Eliminar una categoría
 router.delete('/:id', async (req, res) => {
     try {
-        const categoryDeleted = await Category.findByIdAndDelete(req.params.id);
-        if (!categoryDeleted) return res.status(404).json({ error: 'Categoría no encontrada' });
+        const deleted = await Category.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ error: 'Categoría no encontrada' });
         res.json({ message: 'Categoría eliminada con éxito' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Agregar una subcategoría a una categoría (POST)
+// Agregar subcategoría a una categoría
 router.post('/:id/subcategory', async (req, res) => {
     try {
-        // Buscar la categoría principal
+        const { name, description } = req.body;
+        if (!name) return res.status(400).json({ error: 'Falta el campo name para la subcategoría' });
+
         const category = await Category.findById(req.params.id);
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
 
-        // Verificar si los datos de la subcategoría fueron enviados
-        const { name, description } = req.body;
-        if (!name) {
-            return res.status(400).json({ error: 'Falta el campo name para la subcategoría' });
+        const subLink = generateLink(category.categoryLink, name);
+        let sub = await SubCategory.findOne({ categoryLink: subLink });
+
+        if (!sub) {
+            sub = await new SubCategory({ name, description, categoryLink: subLink }).save();
         }
 
-        // Generar el categoryLink para la subcategoría, concatenando con el categoryLink de la categoría principal
-        const subcategoryLink = `${category.categoryLink ? category.categoryLink + '/' : ''}${name.toLowerCase().replace(/\s+/g, '-')}`;
+        category.subcategories.push(sub._id);
 
-        // Verificar si ya existe una subcategoría con ese categoryLink
-        let subcategory = await SubCategory.findOne({ categoryLink: subcategoryLink });
+        const validSubs = await SubCategory.find({ '_id': { $in: category.subcategories } }).select('_id');
+        const validIds = validSubs.map(sub => sub._id.toString());
+        category.subcategories = category.subcategories.filter(id => validIds.includes(id.toString()));
 
-        // Si no existe, crear la subcategoría
-        if (!subcategory) {
-            subcategory = new SubCategory({
-                name: name,
-                description: description,
-                categoryLink: subcategoryLink,  // El link de la subcategoría
-            });
-
-            // Guardar la subcategoría recién creada
-            await subcategory.save();
-        }
-
-        // Agregar la subcategoría al array de subcategorías de la categoría principal
-        category.subcategories.push(subcategory._id);
-
-        // Filtrar y eliminar subcategorías que no existen
-        const validSubcategories = await SubCategory.find({
-            '_id': { $in: category.subcategories }
-        }).select('_id');
-
-        // Extraer los IDs válidos de las subcategorías existentes
-        const validSubcategoryIds = validSubcategories.map(sub => sub._id.toString());
-
-        // Filtrar las subcategorías para eliminar las que no existen
-        category.subcategories = category.subcategories.filter(subcategoryId =>
-            validSubcategoryIds.includes(subcategoryId.toString())
-        );
-
-        // Guardar la categoría principal con los cambios
         await category.save();
-
-        // Responder con la categoría actualizada
         res.status(201).json(category);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-
-// Eliminar una subcategoría de una categoría (DELETE)
+// Eliminar subcategoría de una categoría
 router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {
     try {
         const category = await Category.findById(req.params.id);
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
 
-        // Eliminar la subcategoría del array de subcategorías
-        const subcategoryIndex = category.subcategories.indexOf(req.params.subcategoryId);
-        if (subcategoryIndex === -1) return res.status(404).json({ error: 'Subcategoría no encontrada' });
+        category.subcategories = category.subcategories.filter(
+            id => id.toString() !== req.params.subcategoryId
+        );
 
-        category.subcategories.splice(subcategoryIndex, 1);
         await category.save();
-
         res.json({ message: 'Subcategoría eliminada con éxito' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Obtener una subcategoría por su ID (GET)
+// Obtener una subcategoría por ID
 router.get('/subcategory/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-
-        // Buscar la subcategoría por su ID
-        const subcategory = await SubCategory.findById(id);
-
-        // Verificar si la subcategoría existe
+        const subcategory = await SubCategory.findById(req.params.id);
         if (!subcategory) return res.status(404).json({ error: 'Subcategoría no encontrada' });
-
-        // Responder con los datos de la subcategoría
         res.json(subcategory);
     } catch (err) {
         res.status(500).json({ error: err.message });
