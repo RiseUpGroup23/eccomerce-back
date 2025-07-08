@@ -162,6 +162,8 @@ router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {
         category.subcategories = category.subcategories.filter(
             id => id.toString() !== req.params.subcategoryId
         );
+        
+        await SubCategory.findByIdAndDelete(req.params.subcategoryId);
 
         await category.save();
         res.json({ message: 'Subcategoría eliminada con éxito' });
