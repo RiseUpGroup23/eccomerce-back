@@ -172,10 +172,11 @@ const sendEmail = async ({
       .setText(textContent)
       .setContext({ name: toName });
 
+    // Enviar el email al destinatario
+    await estr.mail.send(params);
     // Enviar copia al vendedor
     await notifySellerOfSale({ subject, htmlContent, textContent });
-    // Enviar el email al destinatario
-    return await estr.mail.send(params);
+    return true;
   } catch (error) {
     console.error("Error al enviar mail", error)
   }
