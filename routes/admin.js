@@ -355,4 +355,9 @@ router.get('/stats/mostSold', async (req, res) => {
     }
 });
 
+router.get("/dashboard", (req, res) => {
+  res.json({ message: "Ruta protegida accedida", user: req.user });
+});
+
+
 module.exports = router;
