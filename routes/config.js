@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const { ConfigModel } = require("../models/config/configModel")
 const clearExpiredCarts = require("./modules/cleanExpiredCarts")
+const auth = require('../middlewares/auth');
 
 /* GET of configuration */
 router.get('/', async function (req, res, next) {
@@ -24,7 +25,7 @@ router.get('/', async function (req, res, next) {
 });
 
 /* PUT of configuration */
-router.put('/', async function (req, res, next) {
+router.put('/',auth, async function (req, res, next) {
   try {
     let existingConfig = await ConfigModel.findOne({})
 

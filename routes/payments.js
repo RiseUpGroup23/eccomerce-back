@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Payment = require('../models/payment/paymentModel');  // Asegúrate de que la ruta sea correcta para el modelo de Payment
+const auth = require('../middlewares/auth');
 
 // Crear un nuevo método de pago
-router.post('/create', async (req, res) => {
+router.post('/create', auth, async (req, res) => {
     try {
         const newPayment = new Payment(req.body);
 
@@ -86,7 +87,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Actualizar un método de pago por ID
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -108,7 +109,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Eliminar un método de pago por ID
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     const { id } = req.params;
 
     try {

@@ -2,10 +2,11 @@ const express = require('express');
 const { DispositionModel } = require('../models/disposition/dispositionModel');
 
 const router = express.Router();
+const auth = require('../middlewares/auth');
 
 // Crear o actualizar un único DispositionItem (POST/PUT)
 // Si ya existe un documento, lo actualiza; si no, lo crea
-router.post("/", async (req, res) => {
+router.post("/", auth, async (req, res) => {
     try {
         // Intentamos encontrar un documento existente
         let disposition = await DispositionModel.findOne();
@@ -55,7 +56,7 @@ router.get("/:id", async (req, res) => {
 
 // Eliminar el único DispositionItem (DELETE)
 // Elimina el único documento de disposición en la base de datos
-router.delete("/", async (req, res) => {
+router.delete("/", auth, async (req, res) => {
     try {
         const deletedDisposition = await DispositionModel.findOneAndDelete();
         if (!deletedDisposition) {

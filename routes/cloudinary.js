@@ -1,8 +1,9 @@
 const express = require('express');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
-const sharp = require('sharp'); 
+const sharp = require('sharp');
 const upload = multer({ storage: multer.memoryStorage() });
+const auth = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ const processImage = async (buffer) => {
     try {
         // Redimensionar y comprimir la imagen para que no supere 1MB y tenga un tamaño adecuado
         const processedImage = await sharp(buffer)
-            .resize(1300, 600, { 
+            .resize(1300, 600, {
                 fit: sharp.fit.inside,
                 withoutEnlargement: true  // No redimensionar si la imagen es más pequeña
             })
@@ -32,7 +33,7 @@ const processImage = async (buffer) => {
 };
 
 // Endpoint para cargar varias imágenes
-router.post('/', upload.array('photos', 6), async (req, res) => {
+router.post('/', auth, upload.array('photos', 6), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No se proporcionaron imágenes.' });

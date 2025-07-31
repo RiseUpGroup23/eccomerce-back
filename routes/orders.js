@@ -5,6 +5,7 @@ const Product = require('../models/product/productModel');
 const User = require('../models/user/userModel');
 const Cart = require('../models/cart/cartModel');
 const { sendEmail, thanksEmailTemplate } = require('./modules/mailer');
+const auth = require('../middlewares/auth');
 
 router.post('/create', async (req, res) => {
     try {
@@ -121,7 +122,7 @@ router.get('/:orderId', async (req, res) => {
 });
 
 // Actualizar una orden por orderId
-router.put('/:orderId', async (req, res) => {
+router.put('/:orderId',auth, async (req, res) => {
     const { orderId } = req.params;
     const body = req.body;  // Usamos el objeto completo del cuerpo de la solicitud
 
