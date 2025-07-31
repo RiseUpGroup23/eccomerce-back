@@ -59,7 +59,7 @@ router.post("/login", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: !isLocal,
-      sameSite: "Strict",
+      sameSite: "None",
       maxAge: 3600000,
     });
     console.log("Token generado y cookie establecida");
@@ -126,16 +126,6 @@ router.delete("/delete/:id", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
-
-router.post("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-  });
-
-  res.json({ message: "Sesión cerrada correctamente" });
 });
 
 module.exports = router;
