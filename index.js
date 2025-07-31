@@ -17,7 +17,6 @@ const allowedOrigins = [
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Permitir sin origin cuando es una request directa del mismo servidor (como Postman)
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -29,6 +28,10 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
+// 💡 Muy importante: habilitar OPTIONS para todas las rutas
+app.options('*', cors(corsOptions));
+
+// Aplicar CORS globalmente
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
@@ -66,7 +69,10 @@ app.use('/pickup', pickupRoutes);
 app.use('/transport', transportRoutes);
 app.use('/disposition', dispositionRoutes);
 app.use('/search', searchRoutes);
-app.use('/admin', auth, adminRoutes);
+
+// 💡 Aquí aplicamos CORS también antes del auth para rutas protegidas
+app.use('/admin', cors(corsOptions), auth, adminRoutes);
+
 app.use('/cloudinary', cloudinaryRoutes);
 app.use('/orders', ordersRoutes);
 app.use('/payments', paymentsRoutes);
