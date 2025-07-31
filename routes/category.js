@@ -69,12 +69,7 @@ router.get('/:idOrLink', async (req, res) => {
             : await Category.findOne({ categoryLink: value }).populate('subcategories');
 
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
-
-        const validSubs = await SubCategory.find({ '_id': { $in: category.subcategories } }).select('_id');
-        const validIds = validSubs.map(sub => sub._id.toString());
-        category.subcategories = category.subcategories.filter(sub => validIds.includes(sub._id.toString()));
-
-        await category.save();
+        
         res.json(category);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -111,7 +106,6 @@ router.put('/:id', async (req, res) => {
         category.categoryLink = categoryLink;
 
         const updatedSubcategoryIds = [];
-
         for (const sub of subcategories) {
             if (sub._id) {
                 // Actualizar subcategoría existente
@@ -152,10 +146,14 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/subcategory', async (req, res) => {
     try {
         const { name, description } = req.body;
-        if (!name) return res.status(400).json({ error: 'Falta el campo name para la subcategoría' });
+        if (!name) {
+            return res.status(400).json({ error: 'Falta el campo name para la subcategoría' });
+        }
 
         const category = await Category.findById(req.params.id);
-        if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });
+        if (!category) {
+            return res.status(404).json({ error: 'Categoría no encontrada' });
+        }
 
         const subLink = generateLink(category.categoryLink, name);
         let sub = await SubCategory.findOne({ categoryLink: subLink });
@@ -164,18 +162,31 @@ router.post('/:id/subcategory', async (req, res) => {
             sub = await new SubCategory({ name, description, categoryLink: subLink }).save();
         }
 
-        category.subcategories.push(sub._id);
-
-        const validSubs = await SubCategory.find({ '_id': { $in: category.subcategories } }).select('_id');
-        const validIds = validSubs.map(sub => sub._id.toString());
-        category.subcategories = category.subcategories.filter(id => validIds.includes(id.toString()));
+        // Agregar solo si no existe ya en el array
+        const subIdStr = sub._id.toString();
+        const alreadyExists = category.subcategories.some(id => id.toString() === subIdStr);
+        if (!alreadyExists) {
+            category.subcategories.push(sub._id);
+        }
 
         await category.save();
-        res.status(201).json(category);
+
+        // Traer subcategorías completas
+        const fullSubcategories = await SubCategory.find({
+            _id: { $in: category.subcategories }
+        });
+
+        const response = {
+            ...category.toObject(),
+            subcategories: fullSubcategories
+        };
+
+        res.status(201).json(response);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Eliminar subcategoría de una categoría
 router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {

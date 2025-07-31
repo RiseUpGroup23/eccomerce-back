@@ -77,13 +77,19 @@ router.get("/", async (req, res) => {
     }
 
     if (subCategory) {
-      const query = mongoose.Types.ObjectId.isValid(subCategory)
-        ? { _id: subCategory }
-        : { name: new RegExp(`^${subCategory}$`, "i") };
-      const subCat = await SubCategoria.findOne(query);
+      let query;
+      let subCat
+      if (mongoose.Types.ObjectId.isValid(subCategory)) {
+        query = { _id: subCategory };
+        subCat = await SubCategoria.findOne(query);
+      } else {
+        subCat = await SubCategoria.findOne({ categoryLink: `${category}/${subCategory}` });
+      }
+
       if (subCat) {
         filterConditions.subcategory = subCat._id;
         searchTitle = subCat.name;
+        listingDescription = subCat.description;
       }
     }
 
