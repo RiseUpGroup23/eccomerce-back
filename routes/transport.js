@@ -2,9 +2,10 @@ const express = require('express');
 const Transport = require('../models/transport/transportModel');
 
 const router = express.Router();
+const auth = require('../middlewares/auth');
 
 // Create a Transport (POST)
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         const newTransport = new Transport(req.body);
         const savedTransport = await newTransport.save();
@@ -36,7 +37,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a Transport (PUT)
-router.put('/:id', async (req, res) => {
+router.put('/:id',auth, async (req, res) => {
     try {
         const updatedTransport = await Transport.findByIdAndUpdate(
             req.params.id,
@@ -51,7 +52,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a Transport (DELETE)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id',auth, async (req, res) => {
     try {
         const deletedTransport = await Transport.findByIdAndDelete(req.params.id);
         if (!deletedTransport) return res.status(404).json({ error: 'Transport not found' });

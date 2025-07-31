@@ -3,9 +3,10 @@ const Collection = require('../models/collection/collectionModel');
 const Product = require('../models/product/productModel');
 
 const router = express.Router();
+const auth = require('../middlewares/auth');
 
 // Create an empty collection (POST)
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         const { title, products } = req.body;
 
@@ -40,7 +41,7 @@ router.get('/:collectionId', async (req, res) => {
 });
 
 // Delete a collection by ID (DELETE)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const deletedCollection = await Collection.findByIdAndDelete(req.params.id);
         if (!deletedCollection) return res.status(404).json({ error: 'Colección no encontrada' });
@@ -51,7 +52,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Edit a collection by ID (PUT)
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     try {
         const updatedCollection = await Collection.findByIdAndUpdate(
             req.params.id,
@@ -66,7 +67,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Add a product to a collection (PUT)
-router.put('/:id/add-product', async (req, res) => {
+router.put('/:id/add-product', auth, async (req, res) => {
     try {
         const { productId } = req.body;
 

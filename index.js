@@ -2,22 +2,36 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const cookieParser = require('cookie-parser'); 
+const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
 const app = express();
 
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://ecommerce-riseup.vercel.app',
+    'https://www.nextbooks.com.ar',
+    'https://importzonetuc.vercel.app'
+];
+
 const corsOptions = {
-    origin: '*', 
-    credentials: true, 
+    origin: function (origin, callback) {
+        // Permitir sin origin cuando es una request directa del mismo servidor (como Postman)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-app.use(cors(corsOptions)); 
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cookieParser()); 
+app.use(cookieParser());
 
 const PORT = process.env.PORT || 5000;
 
@@ -40,7 +54,7 @@ const cloudinaryRoutes = require('./routes/cloudinary');
 const ordersRoutes = require('./routes/orders');
 const paymentsRoutes = require('./routes/payments');
 const mpRoutes = require('./routes/mp');
-const auth = require('./Middlewares/authMiddleware');
+const auth = require('./middlewares/auth');
 
 app.use("/", configRouter);
 app.use('/products', productosRoutes);

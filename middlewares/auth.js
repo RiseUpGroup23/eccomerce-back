@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const authMiddleware = (req, res, next) => {
+const auth = (req, res, next) => {
   const token = req.cookies?.token;
 
   if (!token) {
@@ -8,7 +8,7 @@ const authMiddleware = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, "5b4a3d9c2a1c8924b9a1019258788c32561908c35745f7f10f59b7e3f3d5a1a0");
     req.user = decoded;
     next();
   } catch (err) {
@@ -16,4 +16,4 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+module.exports = auth;

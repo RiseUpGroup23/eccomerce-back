@@ -3,11 +3,11 @@ const Product = require('../models/product/productModel');
 const Categoria = require('../models/category/categoryModel');
 const SubCategoria = require('../models/category/subCategoryModel');
 const quantityInCarts = require('./modules/quantityInCarts');
-
+const auth = require('../middlewares/auth');
 const router = express.Router();
 
 // Crear un producto (POST)
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         const { name, category, subcategory } = req.body;
 
@@ -123,7 +123,7 @@ router.get('/subcategoria/:idSubcategoria', async (req, res) => {
 });
 
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     try {
         // Verificar si subcategory está vacío y asignar null si es necesario
         if (req.body.subcategory === "") {
@@ -177,7 +177,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const productoEliminado = await Product.findByIdAndDelete(req.params.id);
         if (!productoEliminado) return res.status(404).json({ error: 'Product no encontrado' });

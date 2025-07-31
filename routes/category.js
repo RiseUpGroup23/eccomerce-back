@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Category = require('../models/category/categoryModel');
 const SubCategory = require('../models/category/subCategoryModel');
-
+const auth = require('../middlewares/auth');
 const router = express.Router();
 
 // Función utilitaria para generar links amigables
@@ -23,7 +23,7 @@ const generateLink = (base, name) => {
 };
 
 // Crear una categoría con subcategorías
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         const { name, description, subcategories = [] } = req.body;
         const categoryLink = generateLink('', name);
@@ -95,7 +95,7 @@ router.get('/:id/subcategorias', async (req, res) => {
 });
 
 // Actualizar una categoría y sus subcategorías
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     try {
         const { name, description, subcategories = [] } = req.body;
 
@@ -138,7 +138,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Eliminar una categoría
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const deleted = await Category.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ error: 'Categoría no encontrada' });
@@ -149,7 +149,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Agregar subcategoría a una categoría
-router.post('/:id/subcategory', async (req, res) => {
+router.post('/:id/subcategory', auth, async (req, res) => {
     try {
         const { name, description } = req.body;
         if (!name) return res.status(400).json({ error: 'Falta el campo name para la subcategoría' });
@@ -178,7 +178,7 @@ router.post('/:id/subcategory', async (req, res) => {
 });
 
 // Eliminar subcategoría de una categoría
-router.delete('/:id/subcategory/:subcategoryId', async (req, res) => {
+router.delete('/:id/subcategory/:subcategoryId', auth, async (req, res) => {
     try {
         const category = await Category.findById(req.params.id);
         if (!category) return res.status(404).json({ error: 'Categoría no encontrada' });

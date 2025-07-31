@@ -5,9 +5,7 @@ const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 
-const secretKey =
-  process.env.JWT_SECRET ||
-  "5b4a3d9c2a1c8924b9a1019258788c32561908c35745f7f10f59b7e3f3d5a1a0";
+const secretKey = "5b4a3d9c2a1c8924b9a1019258788c32561908c35745f7f10f59b7e3f3d5a1a0";
 
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
@@ -21,7 +19,7 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-router.post("/", async (req, res) => {
+router.post("/alta-cliente", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -57,12 +55,14 @@ router.post("/login", async (req, res) => {
     });
 
     //
+    const isLocal = req.hostname === 'localhost' || req.get('host')?.includes('localhost');
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // false para desarrollo local
+      secure: !isLocal,
       sameSite: "Strict",
       maxAge: 3600000,
     });
+    console.log("Token generado y cookie establecida");
 
     res.status(200).json({ logged: true, message: "Login exitoso" });
   } catch (err) {

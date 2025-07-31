@@ -2,9 +2,10 @@ const express = require('express');
 const Pickup = require('../models/pickup/pickupModel');
 const Product = require('../models/product/productModel');
 const router = express.Router();
+const auth = require('../middlewares/auth');
 
 // Create a Pickup (POST)
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         const newPickup = new Pickup(req.body);
         const savedPickup = await newPickup.save();
@@ -36,7 +37,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a Pickup (PUT)
-router.put('/:id', async (req, res) => {
+router.put('/:id',auth, async (req, res) => {
     try {
         const updatedPickup = await Pickup.findByIdAndUpdate(
             req.params.id,
@@ -51,7 +52,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a Pickup (DELETE)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id',auth, async (req, res) => {
     const session = await Pickup.startSession();
     session.startTransaction();
     try {
