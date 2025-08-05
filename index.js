@@ -25,7 +25,13 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Origin'
+    ]
 };
 
 // 💡 Muy importante: habilitar OPTIONS para todas las rutas
@@ -70,7 +76,7 @@ app.use('/transport', transportRoutes);
 app.use('/disposition', dispositionRoutes);
 app.use('/search', searchRoutes);
 
-// 💡 Aquí aplicamos CORS también antes del auth para rutas protegidas
+// 💡 Aplicamos CORS antes del auth para rutas protegidas
 app.use('/admin', cors(corsOptions), auth, adminRoutes);
 
 app.use('/cloudinary', cloudinaryRoutes);
