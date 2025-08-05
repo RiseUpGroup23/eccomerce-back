@@ -25,8 +25,20 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: '*'
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'User-Agent',
+        'Referer',
+        'Sec-Fetch-Mode',
+        'Sec-Fetch-Site',
+        'Sec-Fetch-Dest'
+    ]
 };
+
 
 // 💡 Muy importante: habilitar OPTIONS para todas las rutas
 app.options('*', cors(corsOptions));
