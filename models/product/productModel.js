@@ -31,13 +31,14 @@ const productoSchema = new mongoose.Schema({
   subcategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Subcategoria', default: null },
   images: [{ type: String }],
   brand: { type: String },
-
-  // Campo real para totalStock
   totalStock: {
     type: Number,
     default: 0
+  },
+  isHidden: {
+    type: Boolean,
+    default: false
   }
-
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
