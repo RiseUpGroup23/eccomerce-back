@@ -31,6 +31,7 @@ router.get("/", async (req, res) => {
     page = "1",
     priceRange,
     sortBy,
+    showHidden, // <-- si 'true', no filtramos por visibilidad
   } = req.query;
 
   try {
@@ -53,9 +54,7 @@ router.get("/", async (req, res) => {
           $or: [
             { name: { $regex: looseRegex } },
             { brand: { $regex: looseRegex } },
-            { "variants.attributes.name": { $regex: looseRegex } },
-            { isHidden: false }, // explicitamente visible
-            { isHidden: { $exists: false } } // sin la prop => visible
+            { "variants.attributes.name": { $regex: looseRegex } }
           ],
         };
       });
@@ -80,7 +79,7 @@ router.get("/", async (req, res) => {
 
     if (subCategory) {
       let query;
-      let subCat
+      let subCat;
       if (mongoose.Types.ObjectId.isValid(subCategory)) {
         query = { _id: subCategory };
         subCat = await SubCategoria.findOne(query);
@@ -110,11 +109,35 @@ router.get("/", async (req, res) => {
       }
     }
 
-    const totalOfItems = await Product.countDocuments(filterConditions);
+    // 👀 Visibilidad: por defecto solo visibles (isHidden: false o que no exista)
+    const wantShowHidden = String(showHidden || "false").toLowerCase() === "true";
+    const visibilityFilter = {
+      $or: [{ isHidden: false }, { isHidden: { $exists: false } }]
+    };
+
+    // Combinamos todo en un finalFilter robusto:
+    // - preserva un $and existente
+    // - suma el filtro de visibilidad (salvo que showHidden=true)
+    // - incluye los campos sueltos (category, subcategory, etc.) sin perderlos
+    const andClauses = [];
+    if (filterConditions.$and) {
+      andClauses.push(...filterConditions.$and);
+      delete filterConditions.$and;
+    }
+    if (!wantShowHidden) {
+      andClauses.push(visibilityFilter);
+    }
+    // Lo que quede en filterConditions (campos sueltos) lo agregamos como un AND más
+    if (Object.keys(filterConditions).length) {
+      andClauses.push(filterConditions);
+    }
+    const finalFilter = andClauses.length ? { $and: andClauses } : {};
+
+    const totalOfItems = await Product.countDocuments(finalFilter);
 
     let products;
     if (sortBy === "relevance") {
-      const all = await Product.find(filterConditions)
+      const all = await Product.find(finalFilter)
         .populate({
           path: "category",
           populate: { path: "subcategories", model: SubCategoria },
@@ -140,7 +163,7 @@ router.get("/", async (req, res) => {
       else if (sortBy === "priceHigh") sortConditions.sellingPrice = -1;
       else if (sortBy === "priceLow") sortConditions.sellingPrice = 1;
 
-      let query = Product.find(filterConditions);
+      let query = Product.find(finalFilter);
       if (Object.keys(sortConditions).length) query = query.sort(sortConditions);
 
       products = await query
