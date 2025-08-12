@@ -54,6 +54,8 @@ router.get("/", async (req, res) => {
             { name: { $regex: looseRegex } },
             { brand: { $regex: looseRegex } },
             { "variants.attributes.name": { $regex: looseRegex } },
+            { isHidden: false }, // explicitamente visible
+            { isHidden: { $exists: false } } // sin la prop => visible
           ],
         };
       });

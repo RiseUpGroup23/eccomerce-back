@@ -51,7 +51,12 @@ router.post('/', auth, async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
-        const productos = await Product.find();
+        const productos = await Product.find({
+            $or: [
+                { isHidden: false }, // explicitamente visible
+                { isHidden: { $exists: false } } // sin la prop => visible
+            ]
+        });
         res.json(productos);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -92,8 +97,13 @@ router.get('/categoria/:categoryLink', async (req, res) => {
         }
 
         // Ahora buscar los productos que tienen esta categoría
-        const productos = await Product.find({ category: categoria._id }).populate('category').populate('subcategory');
-
+        const productos = await Product.find({
+            category: categoria._id,
+            $or: [
+                { isHidden: false }, // explicitamente visible
+                { isHidden: { $exists: false } } // sin la prop => visible
+            ]
+        }).populate('category').populate('subcategory');
         if (!productos || productos.length === 0) {
             return res.status(404).json({ error: 'No se encontraron productos para esta categoría' });
         }
@@ -111,7 +121,13 @@ router.get('/subcategoria/:idSubcategoria', async (req, res) => {
         const { idSubcategoria } = req.params;
 
         // Busca productos que tengan la subcategoría especificada
-        const productos = await Product.find({ subcategory: idSubcategoria }).populate('category').populate('subcategory');
+        const productos = await Product.find({
+            subcategory: idSubcategoria,
+            $or: [
+                { isHidden: false }, // explicitamente visible
+                { isHidden: { $exists: false } } // sin la prop => visible
+            ]
+        }).populate('category').populate('subcategory');
         if (!productos || productos.length === 0) {
             return res.status(404).json({ error: 'No se encontraron productos para esta subcategoría' });
         }
