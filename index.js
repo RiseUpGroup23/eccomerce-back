@@ -12,7 +12,8 @@ const allowedOrigins = [
     'http://localhost:3000',
     'https://ecommerce-riseup.vercel.app',
     'https://www.nextbooks.com.ar',
-    'https://importzonetuc.vercel.app'
+    'https://importzonetuc.vercel.app',
+    'https://paltech-store.vercel.app/'
 ];
 
 const corsOptions = {
