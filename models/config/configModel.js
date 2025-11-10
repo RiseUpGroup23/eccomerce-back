@@ -26,6 +26,10 @@ const ConfigSchema = new Schema({
       type: String,
       default: "https://www.risingground.org/wp-content/uploads/2016/08/logo_placeholder.png"
     },
+    icon: {
+      type: String,
+      default: "https://cdn-icons-png.flaticon.com/512/2697/2697432.png"
+    },
     menuTira: {
       items: [{
         linkTo: String,
