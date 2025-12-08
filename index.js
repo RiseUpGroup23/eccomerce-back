@@ -12,8 +12,7 @@ const allowedOrigins = [
     'http://localhost:3000',
     'https://ecommerce-riseup.vercel.app',
     'https://www.nextbooks.com.ar',
-    'https://demorise1.vercel.app',
-    'https://puntoahorro.vercel.app'
+    'https://demorise1.vercel.app'
 ];
 
 const corsOptions = {
@@ -51,7 +50,7 @@ app.use(cookieParser());
 
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.MONGO_URI || "mongodb+srv://alejoguzmanx:MMv1znUOUveFgUWD@ecommerce.pvrv7.mongodb.net/ecommerce?retryWrites=true&w=majority")
+await mongoose.connect(process.env.MONGO_URI || "mongodb+srv://alejoguzmanx:MMv1znUOUveFgUWD@ecommerce.pvrv7.mongodb.net/ecommerce?retryWrites=true&w=majority")
     .then(() => console.log('Conexión a MongoDB exitosa'))
     .catch((err) => console.error('Error conectando a MongoDB:', err));
 
