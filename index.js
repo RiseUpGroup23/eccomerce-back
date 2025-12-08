@@ -50,10 +50,6 @@ app.use(cookieParser());
 
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.MONGO_URI || "mongodb+srv://alejoguzmanx:MMv1znUOUveFgUWD@ecommerce.pvrv7.mongodb.net/ecommerce?retryWrites=true&w=majority")
-    .then(() => console.log('Conexión a MongoDB exitosa'))
-    .catch((err) => console.error('Error conectando a MongoDB:', err));
-
 const configRouter = require("./routes/config");
 const productosRoutes = require('./routes/product');
 const categoryRoutes = require('./routes/category');
@@ -94,6 +90,14 @@ app.get('/', (req, res) => {
     res.send('luz verde');
 });
 
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
-});
+
+mongoose.connect(process.env.MONGO_URI || "mongodb+srv://alejoguzmanx:MMv1znUOUveFgUWD@ecommerce.pvrv7.mongodb.net/ecommerce?retryWrites=true&w=majority")
+    .then(() => {
+        console.log('Conexión a MongoDB exitosa')
+        app.listen(PORT, () => {
+            console.log(`Servidor corriendo en el puerto ${PORT}`);
+        });
+    })
+    .catch((err) => console.error('Error conectando a MongoDB:', err));
+
+
