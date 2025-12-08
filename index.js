@@ -13,7 +13,7 @@ const allowedOrigins = [
     'https://ecommerce-riseup.vercel.app',
     'https://www.nextbooks.com.ar',
     'https://demorise1.vercel.app',
-    'https://paltech-back.vercel.app/'
+    'https://paltech-back.vercel.app'
 ];
 
 const corsOptions = {
